@@ -8,7 +8,7 @@ To do this, CUDLR starts a webserver on the target device to host static files a
 We wrote CUDLR to use in [Proletariat's](http://www.proletariat.com) upcoming game, [World Zombination](http://www.worldzombination.com). For more info on why we wrote it and other tools we've released, check out our [blog](http://blog.proletariat.com).
 
 ### Features
-* Supports iOS, Android, and the Unity Editor (PC/Mac support coming soon)
+* Supports iOS, Android, PC/Mac Standalone, and the Unity Editor
 * Capture Unity log messages and stack traces
 * Console runs in any browser
 * Copy/paste from/to the console

@@ -19,7 +19,11 @@ public class ConsoleServer : MonoBehaviour {
     switch (Application.platform) {
       case RuntimePlatform.OSXEditor:
       case RuntimePlatform.WindowsEditor:
+      case RuntimePlatform.WindowsPlayer:
         filePath = Application.dataPath + "/StreamingAssets/WWW/";
+        break;
+      case RuntimePlatform.OSXPlayer:
+        filePath = Application.dataPath + "/Data/StreamingAssets/WWW/";
         break;
       case RuntimePlatform.IPhonePlayer:
         filePath = Application.dataPath + "/Raw/WWW/";
