@@ -1,0 +1,14 @@
+textarea {resize:none;}
+
+body.console {
+  background-color:black;
+}
+textarea.console {
+  width:100%;
+  background-color:#383838;
+  color:#F0F0F0;
+  font-size:14px;
+}
+#output {
+  height:500px;
+}
