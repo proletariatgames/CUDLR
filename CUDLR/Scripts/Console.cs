@@ -271,9 +271,10 @@ class CommandTree {
     _run(tokens, 0);
   }
 
+  static string[] emptyArgs = new string[0]{};
   private void _run(string[] commands, int index) {
     if (commands.Length == index) {
-      RunCommand(commands);
+      RunCommand(emptyArgs);
       return;
     }
 
