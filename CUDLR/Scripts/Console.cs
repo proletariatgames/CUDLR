@@ -177,22 +177,21 @@ class CommandTree {
   }
 
   public void Add(string str, Console.CommandCallback cmd, bool runOnMainThread) {
-    _add(new List<string>(str.ToLower().Split(' ')), cmd, runOnMainThread);
+    _add(str.ToLower().Split(' '), 0, cmd, runOnMainThread);
   }
 
-  private void _add(List<string> commands, Console.CommandCallback cmd, bool runOnMainThread) {
-    if (commands.Count == 0) {
+  private void _add(string[] commands, int command_index, Console.CommandCallback cmd, bool runOnMainThread) {
+    if (commands.Length == command_index) {
       m_runOnMainThread = runOnMainThread;
       m_command = cmd;
       return;
     }
 
-    string token = commands[0];
-    commands.RemoveAt(0);
+    string token = commands[command_index];
     if (!m_subcommands.ContainsKey(token)){
       m_subcommands[token] = new CommandTree();
     }
-    m_subcommands[token]._add(commands, cmd, runOnMainThread);
+    m_subcommands[token]._add(commands, command_index + 1, cmd, runOnMainThread);
   }
 
   public string Complete(string partialCommand) {
