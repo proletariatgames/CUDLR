@@ -49,7 +49,7 @@ public class ConsoleServer : MonoBehaviour {
   }
 
   void Update() {
-    Console.GetInstance().Update();
+    Console.Update();
   }
 
   public void ListenerCallback(IAsyncResult result) {
@@ -75,21 +75,21 @@ public class ConsoleServer : MonoBehaviour {
     // TODO register endpoints outside of server class.
     switch (url) {
       case "/console/out":
-        return Console.GetInstance().Output();
+        return Console.Output();
       case "/console/run":
         string command = args.Get("command");
-        if (command != null) { Console.GetInstance().Run(command); }
+        if (command != null) { Console.Run(command); }
         return "";
       case "/console/commandHistory":
         string index = args.Get("index");
         string previousCommand = null;
         if (index != null) {
-          previousCommand = Console.GetInstance().PreviousCommand(System.Int32.Parse(index));
+          previousCommand = Console.PreviousCommand(System.Int32.Parse(index));
         }
         return previousCommand == null ? "" : previousCommand;
       case "/console/complete":
         string partialCommand = args.Get("command");
-        if (partialCommand != null) { return Console.GetInstance().Complete(partialCommand); }
+        if (partialCommand != null) { return Console.Complete(partialCommand); }
         return "";
       default:
         file = fileRegex.IsMatch(url) ? url : "index.html";
@@ -112,9 +112,9 @@ public class ConsoleServer : MonoBehaviour {
   }
 
   private void HandleLog(string logString, string stackTrace, LogType type) {
-    Console.GetInstance().Log(logString);
+    Console.Log(logString);
     if (type != LogType.Log) {
-      Console.GetInstance().Log(stackTrace);
+      Console.Log(stackTrace);
     }
   }
 
