@@ -17,6 +17,7 @@ We wrote CUDLR to use in [Proletariat's](http://www.proletariat.com) upcoming ga
 * Tab completion
 * Command history
 * Standard text-entry shortcuts (ctrl-a, ctrl-e, etc)
+* Uses standard HTML/CSS for layout
  
 How do I use CUDLR?
 ----
