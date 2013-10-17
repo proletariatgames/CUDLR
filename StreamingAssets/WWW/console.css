@@ -8,6 +8,8 @@ textarea.console {
   background-color:#383838;
   color:#F0F0F0;
   font-size:14px;
+  font-family:;"Courier New", Courier, monospace;
+
 }
 #output {
   height:500px;
