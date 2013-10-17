@@ -26,6 +26,11 @@ How do I use CUDLR?
 * Add the component "Console Commands" and any additional custom command components that you've written.
 * Run the game and connect to http://localhost:55055 with your browser.
 
+An example Console Server GameObject prefab is located in Assets/CUDLR/Examples. Add the GameObject to the scene,
+run the game, and connect to the console with your browser.
+
+An example of adding commands is available [here](https://github.com/proletariatgames/CUDLR/blob/master/CUDLR/Scripts/GameObjectCommands.cs).
+
 Adding Additional Commands
 ----
 
@@ -48,14 +53,6 @@ Delegate functions can output data to the console by calling the Console Log fun
 ```
 Console.GetInstance().Log( <Log String> );
 ```
-
-Examples
-----
-
-An example Console Server GameObject prefab is located in Assets/CUDLR/Examples. Add the GameObject to the scene,
-run the game, and connect to the console with your browser.
-
-An example of adding commands is available [here](https://github.com/proletariatgames/CUDLR/blob/master/CUDLR/Scripts/GameObjectCommands.cs).
 
 License
 ---
