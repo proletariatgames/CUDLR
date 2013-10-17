@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Linq;
+using System.Reflection;
 
 struct QueuedCommand {
   public Console.CommandCallback command;
@@ -35,6 +36,8 @@ public class Console {
     m_history = new List<string>();
     m_help = new List<string>();
     m_commandQueue = new Queue<QueuedCommand>();
+
+    RegisterAttributes();
   }
 
   public static Console GetInstance() {
@@ -106,6 +109,30 @@ public class Console {
     m_help.Add(command+" : "+desc);
   }
 
+  private void RegisterAttributes() {
+    foreach(Type type in Assembly.GetExecutingAssembly().GetTypes()) {
+
+      // FIXME add support for non-static methods (FindObjectByType?)
+      foreach(MethodInfo method in type.GetMethods(BindingFlags.Public|BindingFlags.Static)) {
+        ConsoleCommandAttribute[] attrs = method.GetCustomAttributes(typeof(ConsoleCommandAttribute), true) as ConsoleCommandAttribute[];
+        if (attrs.Length == 0)
+          continue;
+
+        CommandCallback action = (CommandCallback) Delegate.CreateDelegate(typeof(CommandCallback), method, false);
+        if (action == null)
+          continue;
+
+        foreach(ConsoleCommandAttribute cmd in attrs) {
+          if (cmd.m_command == null || cmd.m_command.Length == 0)
+            continue;
+
+          m_commands.Add(cmd.m_command, action, cmd.m_runOnMainThread);
+          m_help.Add(string.Format("{0} : {1}", cmd.m_command, cmd.m_help));
+        }
+      }
+    }
+  }
+
   /* Get a previously ran command from the history */
   public string PreviousCommand(int index) {
     return index >= 0 && index < m_history.Count ? m_history[index]  : null;
@@ -116,6 +143,22 @@ public class Console {
     m_history.Insert(0, command);
     if (m_history.Count > MAX_HISTORY) m_history.RemoveAt(m_history.Count - 1);
   }
+}
+
+
+[AttributeUsage(AttributeTargets.Method)]
+public class ConsoleCommandAttribute : Attribute
+{
+    public ConsoleCommandAttribute(string cmd, string help, bool runOnMainThread = true)
+    {
+      m_command = cmd;
+      m_help = help;
+      m_runOnMainThread = runOnMainThread;
+    }
+
+    public string m_command;
+    public string m_help;
+    public bool m_runOnMainThread;
 }
 
 class CommandTree {
