@@ -9,7 +9,7 @@ using System.Reflection;
 public static class GameObjectCommands {
 
   [ConsoleCommand("object list", "lists all the game objects in the scene")]
-  public static void ListGameObjects(List<string> args) {
+  public static void ListGameObjects() {
     UnityEngine.Object[] objects = UnityEngine.Object.FindObjectsOfType(typeof(GameObject));
     foreach (UnityEngine.Object obj in objects) {
       Console.Log(obj.name);
@@ -17,8 +17,8 @@ public static class GameObjectCommands {
   }
 
   [ConsoleCommand("object print", "lists properties of the object")]
-  public static void PrintGameObject(List<string> args) {
-    if (args.Count < 1) {
+  public static void PrintGameObject(string[] args) {
+    if (args.Length < 1) {
       Console.Log( "expected : object print <Object Name>" );
       return;
     }

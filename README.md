@@ -42,10 +42,10 @@ Delegate will be called passing in any additional arguments used in the console.
 [ConsoleCommand(<Command String>, <Description>, <Optional: flag to run on main thread>)]
 ```
 
-The Command Delegate returns void and takes in a list of strings.
+The Command Delegate returns void and either takes void or a string[] of arguments.
 
 ```
-public delegate void CommandCallback(List<string> args);
+public delegate void CommandCallback(string[] args);
 ```
 
 
