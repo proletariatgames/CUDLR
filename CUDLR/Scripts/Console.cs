@@ -39,73 +39,78 @@ public class Console {
     RegisterAttributes();
   }
 
-  public static Console GetInstance() {
-    if (instance == null) instance = new Console();
-    return instance;
+  public static Console Instance {
+    get {
+      if (instance == null) instance = new Console();
+      return instance;
+    }
   }
 
-  public void Update() {
-    while (m_commandQueue.Count > 0) {
-      QueuedCommand cmd = m_commandQueue.Dequeue();
+  public static void Update() {
+    while (Instance.m_commandQueue.Count > 0) {
+      QueuedCommand cmd = Instance.m_commandQueue.Dequeue();
       cmd.command( cmd.args );
     }
   }
 
   /* Queue a command to be executed on update on the main thread */
-  public void Queue(CommandCallback command, List<string> args) {
+  public static void Queue(CommandCallback command, List<string> args) {
     QueuedCommand queuedCommand = new QueuedCommand();
     queuedCommand.command = command;
     queuedCommand.args = args;
-    m_commandQueue.Enqueue( queuedCommand );
+    Instance.m_commandQueue.Enqueue( queuedCommand );
   }
 
   /* Execute a command */
-  public void Run(string str) {
+  public static void Run(string str) {
     if (str.Length > 0) {
       LogCommand(str);
-      RecordCommand(str);
-      m_commands.Run(str);
+      Instance.RecordCommand(str);
+      Instance.m_commands.Run(str);
     }
   }
 
   /* Clear all output from console */
-  public void Clear() {
-    m_output.Clear();
+  [ConsoleCommand("clear", "clears console output", false)]
+  public static void Clear(List<string> args = null) {
+    Instance.m_output.Clear();
   }
 
   /* Print a list of all console commands */
-  public void PrintCommands() {
-    Log( string.Format("Commands:{0}", m_help) );
+  [ConsoleCommand("help", "prints commands", false)]
+  public static void Help(List<string> args) {
+    Log( string.Format("Commands:{0}", Instance.m_help));
   }
 
   /* Find command based on partial string */
-  public string Complete(string partialCommand) {
-    return m_commands.Complete( partialCommand );
+  public static string Complete(string partialCommand) {
+    return Instance.m_commands.Complete( partialCommand );
   }
 
   /* Logs user input to output */
-  public void LogCommand(string cmd) {
+  public static void LogCommand(string cmd) {
     Log(COMMAND_OUTPUT_PREFIX+cmd);
   }
 
   /* Logs string to output */
-  public void Log(string str) {
-    m_output.Add(str);
-    if (m_output.Count > MAX_LINES) m_output.RemoveAt(0);
+  public static void Log(string str) {
+    Instance.m_output.Add(str);
+    if (Instance.m_output.Count > MAX_LINES) 
+      Instance.m_output.RemoveAt(0);
   }
 
   /* Returns the output */
-  public string Output() {
-    return string.Join("\n", m_output.ToArray());
+  public static string Output() {
+    return string.Join("\n", Instance.m_output.ToArray());
   }
 
   /* Register a new console command */
-  public void RegisterCommand(string command, string desc, CommandCallback callback, bool runOnMainThread = true) {
+  public static void RegisterCommand(string command, string desc, CommandCallback callback, bool runOnMainThread = true) {
     if (command == null || command.Length == 0) {
       throw new Exception("Command String cannot be empty");
     }
-    m_commands.Add(command, callback, runOnMainThread);
-    m_help += string.Format("\n{0} : {1}", command, desc);
+    Instance.m_commands.Add(command, callback, runOnMainThread);
+    Instance.m_help += string.Format("\n{0} : {1}", command, desc);
   }
 
   private void RegisterAttributes() {
@@ -133,14 +138,15 @@ public class Console {
   }
 
   /* Get a previously ran command from the history */
-  public string PreviousCommand(int index) {
-    return index >= 0 && index < m_history.Count ? m_history[index]  : null;
+  public static string PreviousCommand(int index) {
+    return index >= 0 && index < Instance.m_history.Count ? Instance.m_history[index]  : null;
   }
 
   /* Update history with a new command */
   private void RecordCommand(string command) {
     m_history.Insert(0, command);
-    if (m_history.Count > MAX_HISTORY) m_history.RemoveAt(m_history.Count - 1);
+    if (m_history.Count > MAX_HISTORY) 
+      m_history.RemoveAt(m_history.Count - 1);
   }
 }
 
@@ -199,9 +205,9 @@ class CommandTree {
       return result;
     } else if (partialCommand.Count == 0) {
       // This is valid but incomplete.. print all of the subcommands
-      Console.GetInstance().LogCommand(result);
+      Console.LogCommand(result);
       foreach (string key in m_subcommands.Keys) {
-        Console.GetInstance().Log( result + " " + key);
+        Console.Log( result + " " + key);
       }
       return result + " ";
     } else if (partialCommand.Count == 1) {
@@ -225,9 +231,9 @@ class CommandTree {
         return result + matches[0] + " ";
       } else if (matches.Count > 1) {
         // list all the options for the user and return partial
-        Console.GetInstance().LogCommand(result + partial);
+        Console.LogCommand(result + partial);
         foreach (string match in matches) {
-          Console.GetInstance().Log( result + match);
+          Console.Log( result + match);
         }
       }
       return result + partial;
@@ -270,13 +276,11 @@ class CommandTree {
 
   private void RunCommand(List<string> args) {
     if (m_command == null) {
-      Console.GetInstance().Log("command not found");
+      Console.Log("command not found");
     } else if (m_runOnMainThread) {
-      Console.GetInstance().Queue( m_command, args );
+      Console.Queue( m_command, args );
     } else {
       m_command(args);
     }
   }
-
 }
-
