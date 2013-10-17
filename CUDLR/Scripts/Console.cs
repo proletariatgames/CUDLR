@@ -25,7 +25,7 @@ public class Console {
   private CommandTree m_commands;
   private List<string> m_output;
   private List<string> m_history;
-  private List<string> m_help;
+  private string m_help;
   private Queue<QueuedCommand> m_commandQueue;
 
   public delegate void CommandCallback(List<string> args);
@@ -34,7 +34,6 @@ public class Console {
     m_commands = new CommandTree();
     m_output = new List<string>();
     m_history = new List<string>();
-    m_help = new List<string>();
     m_commandQueue = new Queue<QueuedCommand>();
 
     RegisterAttributes();
@@ -76,7 +75,7 @@ public class Console {
 
   /* Print a list of all console commands */
   public void PrintCommands() {
-    Log( "Commands:\n"+string.Join("\n", m_help.ToArray()) );
+    Log( string.Format("Commands:{0}", m_help) );
   }
 
   /* Find command based on partial string */
@@ -106,7 +105,7 @@ public class Console {
       throw new Exception("Command String cannot be empty");
     }
     m_commands.Add(command, callback, runOnMainThread);
-    m_help.Add(command+" : "+desc);
+    m_help += string.Format("\n{0} : {1}", command, desc);
   }
 
   private void RegisterAttributes() {
@@ -127,7 +126,7 @@ public class Console {
             continue;
 
           m_commands.Add(cmd.m_command, action, cmd.m_runOnMainThread);
-          m_help.Add(string.Format("{0} : {1}", cmd.m_command, cmd.m_help));
+          m_help += string.Format("\n{0} : {1}", cmd.m_command, cmd.m_help);
         }
       }
     }
