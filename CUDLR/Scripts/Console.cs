@@ -7,7 +7,7 @@ using System.Reflection;
 
 struct QueuedCommand {
   public Console.CommandCallback command;
-  public List<string> args;
+  public string[] args;
 }
 
 public class Console {
@@ -28,7 +28,7 @@ public class Console {
   private string m_help;
   private Queue<QueuedCommand> m_commandQueue;
 
-  public delegate void CommandCallback(List<string> args);
+  public delegate void CommandCallback(string[] args);
 
   private Console() {
     m_commands = new CommandTree();
@@ -54,7 +54,7 @@ public class Console {
   }
 
   /* Queue a command to be executed on update on the main thread */
-  public static void Queue(CommandCallback command, List<string> args) {
+  public static void Queue(CommandCallback command, string[] args) {
     QueuedCommand queuedCommand = new QueuedCommand();
     queuedCommand.command = command;
     queuedCommand.args = args;
@@ -72,13 +72,13 @@ public class Console {
 
   /* Clear all output from console */
   [ConsoleCommand("clear", "clears console output", false)]
-  public static void Clear(List<string> args = null) {
+  public static void Clear() {
     Instance.m_output.Clear();
   }
 
   /* Print a list of all console commands */
   [ConsoleCommand("help", "prints commands", false)]
-  public static void Help(List<string> args) {
+  public static void Help() {
     Log( string.Format("Commands:{0}", Instance.m_help));
   }
 
@@ -122,15 +122,30 @@ public class Console {
         if (attrs.Length == 0)
           continue;
 
-        CommandCallback action = (CommandCallback) Delegate.CreateDelegate(typeof(CommandCallback), method, false);
-        if (action == null)
-          continue;
+        CommandCallback cb = (CommandCallback) Delegate.CreateDelegate(typeof(CommandCallback), method, false);
+        if (cb == null)
+        {
+          Action action = (Action) Delegate.CreateDelegate(typeof(Action), method, false);
+          if (action != null) {
+            cb = delegate(string[] args) {
+              action();
+            };
+          }
+        }
 
+        // try with a bare action
         foreach(ConsoleCommandAttribute cmd in attrs) {
-          if (cmd.m_command == null || cmd.m_command.Length == 0)
+          if (cmd.m_command == null || cmd.m_command.Length == 0) {
+            Debug.LogError(string.Format("Method {0}.{1} needs a valid command name.", type, method.Name));
             continue;
+          }
 
-          m_commands.Add(cmd.m_command, action, cmd.m_runOnMainThread);
+          if (cb == null) {
+            Debug.LogError(string.Format("Method {0}.{1} takes the wrong arguments for a console command.", type, method.Name));
+            continue;
+          }
+
+          m_commands.Add(cmd.m_command, cb, cmd.m_runOnMainThread);
           m_help += string.Format("\n{0} : {1}", cmd.m_command, cmd.m_help);
         }
       }
@@ -195,26 +210,25 @@ class CommandTree {
   }
 
   public string Complete(string partialCommand) {
-    return _complete( new List<string>(partialCommand.Split(' ')), "");
+    return _complete(partialCommand.Split(' '), 0, "");
   }
 
-  public string _complete(List<string> partialCommand, string result) {
-    if (partialCommand.Count == 0 && m_command != null) {
+  public string _complete(string[] partialCommand, int index, string result) {
+    if (partialCommand.Length == index && m_command != null) {
       // this is a valid command... so we do nothing
       return result;
-    } else if (partialCommand.Count == 0) {
+    } else if (partialCommand.Length == index) {
       // This is valid but incomplete.. print all of the subcommands
       Console.LogCommand(result);
       foreach (string key in m_subcommands.Keys) {
         Console.Log( result + " " + key);
       }
       return result + " ";
-    } else if (partialCommand.Count == 1) {
-      string partial = partialCommand.Last();
+    } else if (partialCommand.Length == (index+1)) {
+      string partial = partialCommand[index];
       if (m_subcommands.ContainsKey(partial)) {
         result += partial;
-        partialCommand.RemoveAt(0);
-        return m_subcommands[partial]._complete(partialCommand, result);
+        return m_subcommands[partial]._complete(partialCommand, index+1, result);
       }
 
       // Find any subcommands that match our partial command
@@ -238,42 +252,40 @@ class CommandTree {
       return result + partial;
     }
 
-    string token = partialCommand[0];
+    string token = partialCommand[index];
     if (!m_subcommands.ContainsKey(token)) {
       return result;
     }
-    partialCommand.RemoveAt(0);
     result += token + " ";
-    return m_subcommands[token]._complete( partialCommand, result );
+    return m_subcommands[token]._complete( partialCommand, index + 1, result );
   }
 
   public void Run(string commandStr) {
     // Split user input on spaces ignoring anything in qoutes
     Regex regex = new Regex(@""".*?""|[^\s]+");
-    List<string> tokens = new List<string>();
     MatchCollection matches = regex.Matches(commandStr);
-    foreach (Match match in matches) {
-      tokens.Add(match.Value.Replace("\"",""));
+    string[] tokens = new string[matches.Count];
+    for (int i = 0; i < tokens.Length; ++i) {
+      tokens[i] = matches[i].Value.Replace("\"","");
     }
-    _run(tokens);
+    _run(tokens, 0);
   }
 
-  private void _run(List<string> commands) {
-    if (commands.Count == 0) {
+  private void _run(string[] commands, int index) {
+    if (commands.Length == index) {
       RunCommand(commands);
       return;
     }
 
-    string token = commands[0].ToLower();
+    string token = commands[index].ToLower();
     if (!m_subcommands.ContainsKey(token)) {
-      RunCommand(commands);
+      RunCommand(commands.Skip(index).ToArray());
       return;
     }
-    commands.RemoveAt(0);
-    m_subcommands[token]._run (commands);
+    m_subcommands[token]._run(commands, index + 1);
   }
 
-  private void RunCommand(List<string> args) {
+  private void RunCommand(string[] args) {
     if (m_command == null) {
       Console.Log("command not found");
     } else if (m_runOnMainThread) {
