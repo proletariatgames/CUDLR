@@ -7,7 +7,7 @@ CUDLR is a remote developer console for Unity. Instead of struggling to enter co
 
 To do this, CUDLR starts a webserver on the target device to host static files and exposes a HTTP API for executing commands which can interface with your project. 
 
-We wrote CUDLR to use on [Proletariat's](http://www.proletariat.com) upcoming game, [World Zombination](http://www.worldzombination.com].
+We wrote CUDLR to use on [Proletariat's](http://www.proletariat.com) upcoming game, [World Zombination](http://www.worldzombination.com).
 
 ### Features
 * Supports iOS, Android, and the Unity Editor (PC/Mac support coming soon)
