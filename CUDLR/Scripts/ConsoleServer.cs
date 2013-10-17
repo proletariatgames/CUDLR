@@ -27,6 +27,9 @@ public class ConsoleServer : MonoBehaviour {
       case RuntimePlatform.Android:
         filePath = "jar:file://" + Application.dataPath + "!/assets/WWW/";
         break;
+      default:
+        Debug.Log("Error starting CUDLR: Unsupported platform.");
+        return;
     }
 
     // List of supported files
@@ -98,7 +101,6 @@ public class ConsoleServer : MonoBehaviour {
 
     try {
       StreamReader reader = new StreamReader(filePath + file);
-      Debug.Log("reader : " +  reader);
       string responseString = "";
       string text = null;
       while ( (text = reader.ReadLine()) != null ) {
