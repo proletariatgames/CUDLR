@@ -27,7 +27,8 @@ public static class ResponseExtension {
       response.StatusCode = (int)HttpStatusCode.OK;
       response.StatusDescription = "OK";
       response.ContentLength64 = fs.Length;
-      // FIXME content type response.ContentType = System.Net.Mime.MediaTypeNames.Application.Octet;
+      // FIXME - add content types for supported types
+      // response.ContentType = System.Net.Mime.MediaTypeNames.Application.Octet;
       if (download)
         response.AddHeader("Content-disposition", string.Format("attachment; filename={0}", Path.GetFileName(path)));
 
@@ -49,10 +50,8 @@ public class ConsoleServer : MonoBehaviour {
 
   private static HttpListener listener = new HttpListener();
   private static string filePath;
-  private static Regex fileRegex;
 
-  public delegate void RouteCallback(HttpListenerContext context);
-  private static ConsoleRouteAttribute[] registeredRoutes;
+  private static List<ConsoleRouteAttribute> registeredRoutes;
 
   public virtual void Awake() {
     // Set file path based on targeted platform
@@ -76,11 +75,8 @@ public class ConsoleServer : MonoBehaviour {
         return;
     }
 
-    // List of supported files
-    // FIXME - add content types for these files
-    fileRegex = new Regex(@"^.*\.(jpg|gif|png|css|htm|html|ico)$", RegexOptions.IgnoreCase);
-
     RegisterRoutes();
+    RegisterFileHandlers();
 
     // Start server
     Debug.Log("Starting Debug Console on port : " + Port);
@@ -91,7 +87,7 @@ public class ConsoleServer : MonoBehaviour {
 
   private void RegisterRoutes() {
 
-    List<ConsoleRouteAttribute> found = new List<ConsoleRouteAttribute>();
+    registeredRoutes = new List<ConsoleRouteAttribute>();
 
     foreach(Type type in Assembly.GetExecutingAssembly().GetTypes()) {
 
@@ -101,28 +97,55 @@ public class ConsoleServer : MonoBehaviour {
         if (attrs.Length == 0)
           continue;
 
-        RouteCallback cb = (RouteCallback) Delegate.CreateDelegate(typeof(RouteCallback), method, false);
-        if (cb == null)
+        ConsoleRouteAttribute.Callback cbm = (ConsoleRouteAttribute.Callback) Delegate.CreateDelegate(typeof(ConsoleRouteAttribute.Callback), method, false);
+        if (cbm == null)
         {
+          ConsoleRouteAttribute.CallbackSimple cb = (ConsoleRouteAttribute.CallbackSimple) Delegate.CreateDelegate(typeof(ConsoleRouteAttribute.CallbackSimple), method, false);
+          if (cb != null) {
+            cbm = delegate(HttpListenerContext context, Match match) {
+              return cb(context);
+            };
+          }
+        }
+
+        if (cbm == null) {
           Debug.LogError(string.Format("Method {0}.{1} takes the wrong arguments for a console route.", type, method.Name));
           continue;
         }
 
         // try with a bare action
         foreach(ConsoleRouteAttribute route in attrs) {
-          if (string.IsNullOrEmpty(route.m_route)) {
-            Debug.LogError(string.Format("Method {0}.{1} needs a valid route name.", type, method.Name));
+          if (route.m_route == null) {
+            Debug.LogError(string.Format("Method {0}.{1} needs a valid route regexp.", type, method.Name));
             continue;
           }
 
-          route.m_callback = cb;
-          found.Add(route);
+          route.m_callback = cbm;
+          registeredRoutes.Add(route);
         }
       }
     }
+  }
 
-    // FIXME sort and binary search to match
-    registeredRoutes = found.ToArray();
+  static bool FileHandler(HttpListenerContext context, Match match, bool download) {
+    string path = filePath + match.Groups[1].Value;
+    if (!File.Exists(path))
+        return false;
+
+    context.Response.WriteFile(path, download);
+    return true;
+  }
+
+  static void RegisterFileHandlers() {
+    // List of supported files
+    ConsoleRouteAttribute downloadRoute = new ConsoleRouteAttribute(@"^/download/(.*\.(jpg|gif|png|css|htm|html|ico))$");
+    ConsoleRouteAttribute fileRoute = new ConsoleRouteAttribute(@"^/(.*\.(jpg|gif|png|css|htm|html|ico))$");
+
+    downloadRoute.m_callback = delegate(HttpListenerContext context, Match match) { return FileHandler(context, match, true); };
+    fileRoute.m_callback = delegate(HttpListenerContext context, Match match) { return FileHandler(context, match, false); };
+
+    registeredRoutes.Add(downloadRoute);
+    registeredRoutes.Add(fileRoute);
   }
 
   void OnEnable() {
@@ -143,26 +166,22 @@ public class ConsoleServer : MonoBehaviour {
 
     string path = context.Request.Url.AbsolutePath;
     if (path == "/")
-      path = "index.html";
+      path = "/index.html";
 
+    // FIXME filter routes on method
     try {
       bool handled = false;
       foreach (ConsoleRouteAttribute route in registeredRoutes) {
-        if (string.Compare(route.m_route, path, true) != 0)
+        Match match = route.m_route.Match(path);
+        if (!match.Success)
           continue;
 
-        route.m_callback(context);
-        handled = true;
-        break;
-      }
+        if (route.m_methods != null && !route.m_methods.IsMatch(context.Request.HttpMethod))
+          continue;
 
-      if (!handled && fileRegex.IsMatch(path))
-      {
-        path = filePath + path;
-
-        if (File.Exists(path)) {
-          context.Response.WriteFile(path);
+        if (route.m_callback(context, match)) {
           handled = true;
+          break;
         }
       }
 
@@ -194,22 +213,24 @@ public class ConsoleServer : MonoBehaviour {
 static class ConsoleRoutes 
 {
   [ConsoleRoute("/console/out")]
-  public static void Output(HttpListenerContext context) {
+  public static bool Output(HttpListenerContext context) {
     context.Response.WriteString(Console.Output());
+    return true;
   }
 
   [ConsoleRoute("/console/run")]
-  public static void Run(HttpListenerContext context) {
+  public static bool Run(HttpListenerContext context) {
     string command = context.Request.QueryString.Get("command");
     if (!string.IsNullOrEmpty(command))
       Console.Run(command);
 
     context.Response.StatusCode = (int)HttpStatusCode.OK;
     context.Response.StatusDescription = "OK";
+    return true;
   }
 
   [ConsoleRoute("/console/commandHistory")]
-  public static void History(HttpListenerContext context) {
+  public static bool History(HttpListenerContext context) {
     string index = context.Request.QueryString.Get("index");
 
     string previous = null;
@@ -217,11 +238,12 @@ static class ConsoleRoutes
       previous = Console.PreviousCommand(System.Int32.Parse(index));
 
     context.Response.WriteString(previous);
+    return true;
   }
 
 
   [ConsoleRoute("/console/complete")]
-  public static void Complete(HttpListenerContext context) {
+  public static bool Complete(HttpListenerContext context) {
     string partialCommand = context.Request.QueryString.Get("command");
 
     string found = null;
@@ -229,20 +251,24 @@ static class ConsoleRoutes
       found = Console.Complete(partialCommand);
 
     context.Response.WriteString(found);
+    return true;
   }
 }
 
 [AttributeUsage(AttributeTargets.Method)]
 public class ConsoleRouteAttribute : Attribute
 {
-    public ConsoleRouteAttribute(string route, string methods = null)
+    public delegate bool CallbackSimple(HttpListenerContext context);
+    public delegate bool Callback(HttpListenerContext context, Match match);
+
+    public ConsoleRouteAttribute(string route, string methods = @"(GET|HEAD)")
     {
-      m_route = route;
+      m_route = new Regex(route, RegexOptions.IgnoreCase);
       if (methods != null)
-        m_methods = methods.Split('|');
+        m_methods = new Regex(methods);
     }
 
-    public string m_route;
-    public string[] m_methods;
-    public ConsoleServer.RouteCallback m_callback;
+    public Regex m_route;
+    public Regex m_methods;
+    public Callback m_callback;
 }
