@@ -212,13 +212,13 @@ public class ConsoleServer : MonoBehaviour {
 
 static class ConsoleRoutes 
 {
-  [ConsoleRoute("/console/out")]
+  [ConsoleRoute("^/console/out$")]
   public static bool Output(HttpListenerContext context) {
     context.Response.WriteString(Console.Output());
     return true;
   }
 
-  [ConsoleRoute("/console/run")]
+  [ConsoleRoute("^/console/run$")]
   public static bool Run(HttpListenerContext context) {
     string command = context.Request.QueryString.Get("command");
     if (!string.IsNullOrEmpty(command))
@@ -229,7 +229,7 @@ static class ConsoleRoutes
     return true;
   }
 
-  [ConsoleRoute("/console/commandHistory")]
+  [ConsoleRoute("^/console/commandHistory$")]
   public static bool History(HttpListenerContext context) {
     string index = context.Request.QueryString.Get("index");
 
@@ -242,7 +242,7 @@ static class ConsoleRoutes
   }
 
 
-  [ConsoleRoute("/console/complete")]
+  [ConsoleRoute("^/console/complete$")]
   public static bool Complete(HttpListenerContext context) {
     string partialCommand = context.Request.QueryString.Get("command");
 
