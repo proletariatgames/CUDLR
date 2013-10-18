@@ -51,7 +51,7 @@ public class ConsoleServer : MonoBehaviour {
   private static string filePath;
   private static Regex fileRegex;
 
-  public delegate void RouteCallback(HttpListenerRequest request, HttpListenerResponse response);
+  public delegate void RouteCallback(HttpListenerContext context);
   private static ConsoleRouteAttribute[] registeredRoutes;
 
   public virtual void Awake() {
@@ -140,47 +140,45 @@ public class ConsoleServer : MonoBehaviour {
 
   void ListenerCallback(IAsyncResult result) {
     HttpListenerContext context = listener.EndGetContext(result);
-    HttpListenerRequest request = context.Request;
-    HttpListenerResponse response = context.Response;
+
+    string path = context.Request.Url.AbsolutePath;
+    if (path == "/")
+      path = "index.html";
 
     try {
       bool handled = false;
       foreach (ConsoleRouteAttribute route in registeredRoutes) {
-        if (string.Compare(route.m_route, request.Url.AbsolutePath, true) != 0)
+        if (string.Compare(route.m_route, path, true) != 0)
           continue;
 
-        route.m_callback(request, response);
+        route.m_callback(context);
         handled = true;
         break;
       }
 
-      if (!handled)
+      if (!handled && fileRegex.IsMatch(path))
       {
-        string path = null;
-        if (request.Url.AbsolutePath == "/")
-          path = filePath + "index.html";
-        else if (fileRegex.IsMatch(request.Url.AbsolutePath))
-          path = filePath + request.Url.AbsolutePath;
+        path = filePath + path;
 
-        if (path != null && File.Exists(path)) {
-          response.WriteFile(path);
+        if (File.Exists(path)) {
+          context.Response.WriteFile(path);
           handled = true;
         }
       }
 
       if (!handled) {
-        response.StatusCode = (int)HttpStatusCode.NotFound;
-        response.StatusDescription = "Not Found";
+        context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+        context.Response.StatusDescription = "Not Found";
       }
     }
     catch (Exception exception) {
-      response.StatusCode = (int)HttpStatusCode.InternalServerError;
-      response.StatusDescription = string.Format("Fatal error:\n{0}", exception);
+      context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+      context.Response.StatusDescription = string.Format("Fatal error:\n{0}", exception);
 
       Debug.LogException(exception);
     }
 
-    response.OutputStream.Close();
+    context.Response.OutputStream.Close();
 
     listener.BeginGetContext(new AsyncCallback(ListenerCallback), null);
   }
@@ -196,41 +194,41 @@ public class ConsoleServer : MonoBehaviour {
 static class ConsoleRoutes 
 {
   [ConsoleRoute("/console/out")]
-  public static void Output(HttpListenerRequest request, HttpListenerResponse response) {
-    response.WriteString(Console.Output());
+  public static void Output(HttpListenerContext context) {
+    context.Response.WriteString(Console.Output());
   }
 
   [ConsoleRoute("/console/run")]
-  public static void Run(HttpListenerRequest request, HttpListenerResponse response) {
-    string command = request.QueryString.Get("command");
+  public static void Run(HttpListenerContext context) {
+    string command = context.Request.QueryString.Get("command");
     if (!string.IsNullOrEmpty(command))
       Console.Run(command);
 
-    response.StatusCode = (int)HttpStatusCode.OK;
-    response.StatusDescription = "OK";
+    context.Response.StatusCode = (int)HttpStatusCode.OK;
+    context.Response.StatusDescription = "OK";
   }
 
   [ConsoleRoute("/console/commandHistory")]
-  public static void History(HttpListenerRequest request, HttpListenerResponse response) {
-    string index = request.QueryString.Get("index");
+  public static void History(HttpListenerContext context) {
+    string index = context.Request.QueryString.Get("index");
 
     string previous = null;
     if (!string.IsNullOrEmpty(index))
       previous = Console.PreviousCommand(System.Int32.Parse(index));
 
-    response.WriteString(previous);
+    context.Response.WriteString(previous);
   }
 
 
   [ConsoleRoute("/console/complete")]
-  public static void Complete(HttpListenerRequest request, HttpListenerResponse response) {
-    string partialCommand = request.QueryString.Get("command");
+  public static void Complete(HttpListenerContext context) {
+    string partialCommand = context.Request.QueryString.Get("command");
 
     string found = null;
     if (partialCommand != null)
       found = Console.Complete(partialCommand);
 
-    response.WriteString(found);
+    context.Response.WriteString(found);
   }
 }
 
