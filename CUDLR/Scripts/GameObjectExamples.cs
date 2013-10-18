@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Net;
 
 /**
  * Example console commands for getting information about GameObjects
@@ -37,3 +38,29 @@ public static class GameObjectCommands {
     }
   }
 }
+
+
+
+/**
+ * Example console route for getting information about GameObjects
+ *
+
+// FIXME need main thread support
+
+public static class GameObjectRoutes {
+  
+  [ConsoleRoute("^/object/list.json$")]
+  public static bool ListGameObjects(HttpListenerContext context) {
+    string json = "[";
+    UnityEngine.Object[] objects = UnityEngine.Object.FindObjectsOfType(typeof(GameObject));
+    foreach (UnityEngine.Object obj in objects) {
+      // FIXME object names need to be escaped.. use minijson or similar
+      json += string.Format("\"{0}\", ", obj.name);
+    }
+    json = json.TrimEnd(new char[]{',', ' '}) + "]";
+
+    context.Response.WriteString(json, "application/json");
+    return true;
+  }
+}
+*/

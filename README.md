@@ -28,7 +28,7 @@ How do I use CUDLR?
 An example Console Server GameObject prefab is located in Assets/CUDLR/Examples. Add the GameObject to the scene,
 run the game, and connect to the console with your browser.
 
-An example of adding commands is available [here](https://github.com/proletariatgames/CUDLR/blob/master/CUDLR/Scripts/GameObjectCommands.cs).
+An example of adding commands is available [here](https://github.com/proletariatgames/CUDLR/blob/master/CUDLR/Scripts/GameObjectExamples.cs).
 
 Adding Additional Commands
 ----
@@ -52,6 +52,17 @@ Delegate functions can output data to the console by calling the Console Log fun
 ```
 Console.Log( <Log String> );
 ```
+
+Adding Additional Routes
+----
+
+Add a ConsoleRoute attribute to any static method. When the route regex is matched, the
+Delegate will be called passing in the http context and optionally the regex result.
+
+```
+[ConsoleRoute(<Route Pattern>, <Optional: Method Pattern>)]
+```
+
 
 License
 ---
