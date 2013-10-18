@@ -20,16 +20,16 @@ public class ConsoleServer : MonoBehaviour {
       case RuntimePlatform.OSXEditor:
       case RuntimePlatform.WindowsEditor:
       case RuntimePlatform.WindowsPlayer:
-        filePath = Application.dataPath + "/StreamingAssets/WWW/";
+        filePath = Application.dataPath + "/StreamingAssets/CUDLR/";
         break;
       case RuntimePlatform.OSXPlayer:
-        filePath = Application.dataPath + "/Data/StreamingAssets/WWW/";
+        filePath = Application.dataPath + "/Data/StreamingAssets/CUDLR/";
         break;
       case RuntimePlatform.IPhonePlayer:
-        filePath = Application.dataPath + "/Raw/WWW/";
+        filePath = Application.dataPath + "/Raw/CUDLR/";
         break;
       case RuntimePlatform.Android:
-        filePath = "jar:file://" + Application.dataPath + "!/assets/WWW/";
+        filePath = "jar:file://" + Application.dataPath + "!/assets/CUDLR/";
         break;
       default:
         Debug.Log("Error starting CUDLR: Unsupported platform.");

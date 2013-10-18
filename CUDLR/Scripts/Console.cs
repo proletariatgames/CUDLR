@@ -135,7 +135,7 @@ public class Console {
 
         // try with a bare action
         foreach(ConsoleCommandAttribute cmd in attrs) {
-          if (cmd.m_command == null || cmd.m_command.Length == 0) {
+          if (string.IsNullOrEmpty(cmd.m_command)) {
             Debug.LogError(string.Format("Method {0}.{1} needs a valid command name.", type, method.Name));
             continue;
           }
@@ -164,7 +164,6 @@ public class Console {
       m_history.RemoveAt(m_history.Count - 1);
   }
 }
-
 
 [AttributeUsage(AttributeTargets.Method)]
 public class ConsoleCommandAttribute : Attribute
