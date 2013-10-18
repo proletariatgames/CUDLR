@@ -21,14 +21,13 @@ public static class ResponseExtension {
     }
   }
 
-  public static void WriteFile(this HttpListenerResponse response, string path, bool download = false)
+  public static void WriteFile(this HttpListenerResponse response, string path, string type = "application/octet-stream", bool download = false)
   {
     using (FileStream fs = File.OpenRead(path)) {
       response.StatusCode = (int)HttpStatusCode.OK;
       response.StatusDescription = "OK";
       response.ContentLength64 = fs.Length;
-      // FIXME - add content types for supported types
-      // response.ContentType = System.Net.Mime.MediaTypeNames.Application.Octet;
+       response.ContentType = type;
       if (download)
         response.AddHeader("Content-disposition", string.Format("attachment; filename={0}", Path.GetFileName(path)));
 
@@ -132,14 +131,29 @@ public class ConsoleServer : MonoBehaviour {
     if (!File.Exists(path))
         return false;
 
-    context.Response.WriteFile(path, download);
+    string type = "application/octet-stream";
+    string ext = Path.GetExtension(path).ToLower();
+    switch (ext) {
+      case ".js":   type = "application/javascript"; break;
+      case ".json": type = "application/json"; break;
+      case ".jpg":
+      case ".jpeg": type = "image/jpeg"; break;
+      case ".gif": type = "image/gif"; break;
+      case ".png": type = "image/png"; break;
+      case ".css": type = "text/css"; break;
+      case ".htm":
+      case ".html": type = "text/html"; break;
+      case ".ico": type = "image/x-icon"; break;
+    }
+
+    context.Response.WriteFile(path, type, download);
     return true;
   }
 
   static void RegisterFileHandlers() {
     // List of supported files
-    ConsoleRouteAttribute downloadRoute = new ConsoleRouteAttribute(@"^/download/(.*\.(jpg|gif|png|css|htm|html|ico))$");
-    ConsoleRouteAttribute fileRoute = new ConsoleRouteAttribute(@"^/(.*\.(jpg|gif|png|css|htm|html|ico))$");
+    ConsoleRouteAttribute downloadRoute = new ConsoleRouteAttribute(@"^/download/(.*\.(js|json|jpg|jpeg|gif|png|css|htm|html|ico))$");
+    ConsoleRouteAttribute fileRoute = new ConsoleRouteAttribute(@"^/(.*\.(js|json|jpg|jpeg|gif|png|css|htm|html|ico))$");
 
     downloadRoute.m_callback = delegate(HttpListenerContext context, Match match) { return FileHandler(context, match, true); };
     fileRoute.m_callback = delegate(HttpListenerContext context, Match match) { return FileHandler(context, match, false); };
