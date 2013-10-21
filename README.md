@@ -20,7 +20,7 @@ We wrote CUDLR to use in [Proletariat's](http://www.proletariat.com) upcoming ga
 How do I use CUDLR?
 ----
 * Download the unitypackage from github or the [Unity Asset Store](https://www.assetstore.unity3d.com/#/content/XXX) and import it in to your project.
-* Create an empty GameObject in the scene and add the CUDLR->Server component.
+* Create an empty GameObject in the scene and add the CUDLR->Server component. (Or the CUDLR_Server component in Unity 3.5)
 * Set the port on the component (default value is 55055).
 * Add the CUDLR.Command attribute to your code.
 * Run the game and connect to http://localhost:55055 with your browser.
@@ -64,6 +64,12 @@ Delegate will be called passing in the http context and optionally the regex res
 [CUDLR.Route(<Route Pattern>, <Optional: Method Pattern>)]
 ```
 
+The CUDLR.Route Callback Delegate returns void, takes a HttpListenerContext and optionally a Regexp Match
+
+```
+public delegate void Callback(HttpListenerContext context, Match match);
+public delegate void CallbackSimple(HttpListenerContext context);
+```
 
 License
 ---
