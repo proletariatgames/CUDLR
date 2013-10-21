@@ -1,5 +1,4 @@
 using UnityEngine;
-using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Net;
@@ -9,30 +8,30 @@ using System.Net;
  */
 public static class GameObjectCommands {
 
-  [ConsoleCommand("object list", "lists all the game objects in the scene")]
+  [CUDLR.Command("object list", "lists all the game objects in the scene")]
   public static void ListGameObjects() {
     UnityEngine.Object[] objects = UnityEngine.Object.FindObjectsOfType(typeof(GameObject));
     foreach (UnityEngine.Object obj in objects) {
-      Console.Log(obj.name);
+      CUDLR.Console.Log(obj.name);
     }
   }
 
-  [ConsoleCommand("object print", "lists properties of the object")]
+  [CUDLR.Command("object print", "lists properties of the object")]
   public static void PrintGameObject(string[] args) {
     if (args.Length < 1) {
-      Console.Log( "expected : object print <Object Name>" );
+      CUDLR.Console.Log( "expected : object print <Object Name>" );
       return;
     }
 
     GameObject obj = GameObject.Find( args[0] );
     if (obj == null) {
-      Console.Log("GameObject not found : "+args[0]);
+      CUDLR.Console.Log("GameObject not found : "+args[0]);
     } else {
-      Console.Log("Game Object : "+obj.name);
+      CUDLR.Console.Log("Game Object : "+obj.name);
       foreach (Component component in obj.GetComponents(typeof(Component))) {
-        Console.Log("  Component : "+component.GetType());
+       CUDLR.Console.Log("  Component : "+component.GetType());
         foreach (FieldInfo f in component.GetType().GetFields()) {
-          Console.Log("    "+f.Name+" : "+f.GetValue(component));
+          CUDLR.Console.Log("    "+f.Name+" : "+f.GetValue(component));
         }
       }
     }
@@ -49,7 +48,7 @@ public static class GameObjectCommands {
 
 public static class GameObjectRoutes {
   
-  [ConsoleRoute("^/object/list.json$")]
+  [CUDLR.Route("^/object/list.json$")]
   public static bool ListGameObjects(HttpListenerContext context) {
     string json = "[";
     UnityEngine.Object[] objects = UnityEngine.Object.FindObjectsOfType(typeof(GameObject));

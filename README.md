@@ -20,15 +20,15 @@ We wrote CUDLR to use in [Proletariat's](http://www.proletariat.com) upcoming ga
 How do I use CUDLR?
 ----
 * Download the unitypackage from github or the [Unity Asset Store](https://www.assetstore.unity3d.com/#/content/XXX) and import it in to your project.
-* Create an empty GameObject in the scene and add the "Console Server" component.
+* Create an empty GameObject in the scene and add the CUDLR->Server component.
 * Set the port on the component (default value is 55055).
-* Add the ConsoleCommand attribute to your code.
+* Add the CUDLR.Command attribute to your code.
 * Run the game and connect to http://localhost:55055 with your browser.
 
-An example Console Server GameObject prefab is located in Assets/CUDLR/Examples. Add the GameObject to the scene,
+An example CUDLR Server GameObject prefab is located in Assets/CUDLR/Examples. Add the GameObject to the scene,
 run the game, and connect to the console with your browser.
 
-An example of adding commands is available [here](https://github.com/proletariatgames/CUDLR/blob/master/CUDLR/Scripts/GameObjectExamples.cs).
+An example of adding commands is available [here](https://github.com/proletariatgames/CUDLR/blob/master/CUDLR/Examples/GameObjectExamples.cs).
 
 Adding Additional Commands
 ----
@@ -37,30 +37,31 @@ Add a ConsoleCommand attribute to any static method. When the Command String is 
 Delegate will be called passing in any additional arguments used in the console.
 
 ```
-[ConsoleCommand(<Command String>, <Description>, <Optional: flag to run on main thread>)]
+[CUDLR.Command(<Command String>, <Description>, <Optional: flag to run on main thread>)]
 ```
 
-The Command Delegate returns void and either takes void or a string[] of arguments.
+The CUDLR.Command Callback Delegate returns void and either takes void or a string[] of arguments.
 
 ```
-public delegate void CommandCallback(string[] args);
+public delegate void Callback(string[] args);
+public delegate void CallbackSimple();
 ```
 
 
-Delegate functions can output data to the console by calling the Console Log function or using Unity's built-in logging.
+Delegate functions can output data to the console by calling the CUDLR Console Log function or using Unity's built-in logging.
 
 ```
-Console.Log( <Log String> );
+CUDLR.Console.Log( <Log String> );
 ```
 
 Adding Additional Routes
 ----
 
-Add a ConsoleRoute attribute to any static method. When the route regex is matched, the
+Add a CUDLR Route attribute to any static method. When the route regex is matched, the
 Delegate will be called passing in the http context and optionally the regex result.
 
 ```
-[ConsoleRoute(<Route Pattern>, <Optional: Method Pattern>)]
+[CUDLR.Route(<Route Pattern>, <Optional: Method Pattern>)]
 ```
 
 
