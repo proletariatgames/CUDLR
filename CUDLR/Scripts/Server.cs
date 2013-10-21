@@ -12,7 +12,6 @@ namespace CUDLR {
 
   public class Server : MonoBehaviour {
 
-
     [SerializeField]
     public int Port = 55055;
 
@@ -182,7 +181,11 @@ namespace CUDLR {
         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
         context.Response.StatusDescription = string.Format("Fatal error:\n{0}", exception);
 
+#if UNITY_3_5
+        Debug.LogError("Handling: " + path + ", crashed: " + exception);
+#else
         Debug.LogException(exception);
+#endif
       }
 
       context.Response.OutputStream.Close();
