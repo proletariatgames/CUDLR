@@ -1,3 +1,4 @@
+using UnityEngine;
 using System.Net;
 using System.IO;
 
@@ -16,24 +17,17 @@ namespace CUDLR {
       }
     }
 
-    public static void WriteFile(this HttpListenerResponse response, string path, string type = "application/octet-stream", bool download = false)
+    public static void WriteBytes(this HttpListenerResponse response, string path, byte[] bytes, string type = "application/octet-stream", bool download = false)
     {
-      using (FileStream fs = File.OpenRead(path)) {
         response.StatusCode = (int)HttpStatusCode.OK;
         response.StatusDescription = "OK";
-        response.ContentLength64 = fs.Length;
+        response.ContentLength64 = bytes.Length;
         response.ContentType = type;
         if (download)
           response.AddHeader("Content-disposition", string.Format("attachment; filename={0}", Path.GetFileName(path)));
 
-        byte[] buffer = new byte[64 * 1024];
-        int read;
-        while ((read = fs.Read(buffer, 0, buffer.Length)) > 0) {
-          // FIXME required?
-          System.Threading.Thread.Sleep(0);
-          response.OutputStream.Write(buffer, 0, read);
-        }
-      }
+        response.OutputStream.Write(bytes, 0, bytes.Length);
     }
+
   }
 }

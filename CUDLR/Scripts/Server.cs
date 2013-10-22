@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using System.IO;
 using System.Net;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Text.RegularExpressions;
@@ -33,33 +34,14 @@ namespace CUDLR {
       {"css",  "text/css"},
       {"htm",  "text/html"},
       {"html", "text/html"},
-      {"ico",  "image/x-icon"}, 
+      {"ico",  "image/x-icon"},
     };
 
     public virtual void Awake() {
-      // Set file path based on targeted platform
-      switch (Application.platform) {
-        case RuntimePlatform.OSXEditor:
-        case RuntimePlatform.WindowsEditor:
-        case RuntimePlatform.WindowsPlayer:
-          filePath = Application.dataPath + "/StreamingAssets/CUDLR/";
-          break;
-        case RuntimePlatform.OSXPlayer:
-          filePath = Application.dataPath + "/Data/StreamingAssets/CUDLR/";
-          break;
-        case RuntimePlatform.IPhonePlayer:
-          filePath = Application.dataPath + "/Raw/CUDLR/";
-          break;
-        case RuntimePlatform.Android:
-          filePath = "jar:file://" + Application.dataPath + "!/assets/CUDLR/";
-          break;
-        default:
-          Debug.Log("Error starting CUDLR: Unsupported platform.");
-          return;
-      }
-
       RegisterRoutes();
       RegisterFileHandlers();
+
+      filePath = Path.Combine(Application.streamingAssetsPath, "CUDLR");
 
       // Start server
       Debug.Log("Starting CUDLR Server on port : " + Port);
@@ -111,17 +93,35 @@ namespace CUDLR {
     }
 
     static bool FileHandler(HttpListenerContext context, Match match, bool download) {
-      string path = filePath + match.Groups[1].Value;
-      if (!File.Exists(path))
-          return false;
+      string path = Path.Combine(filePath, match.Groups[1].Value);
 
       string type;
       string ext = Path.GetExtension(path).ToLower().TrimStart(new char[] {'.'});
       if (download || !fileTypes.TryGetValue(ext, out type))
         type = "application/octet-stream";
 
-      context.Response.WriteFile(path, type, download);
+      if (path.Contains("://")) {
+        // Load from URL
+        IEnumerator<WWW> e = LoadURL(path);
+        while (e.MoveNext()) {
+          WWW data = e.Current;
+          if(string.IsNullOrEmpty(data.error))
+            return false;
+
+          context.Response.WriteBytes(path, data.bytes, type, download);
+        }
+      } else if (File.Exists(path)) {
+        context.Response.WriteBytes(path, File.ReadAllBytes(path), type, download);
+      } else {
+        return false;
+      }
+
       return true;
+    }
+
+    static IEnumerator<WWW> LoadURL(string path) {
+      WWW www = new WWW(path);
+      yield return www;
     }
 
     static void RegisterFileHandlers() {
