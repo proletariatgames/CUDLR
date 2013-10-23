@@ -32,10 +32,16 @@
           // Check if we are scrolled to the bottom to force scrolling on update
           var output = $('#output');
           shouldScroll = (output[0].scrollHeight - output.scrollTop()) == output.innerHeight();
-          output.val(String(data));
+          var current = output.val();
+          output.val(current + String(data));
           if (callback) callback();
           if (shouldScroll) scrollBottom();
         });
+      }
+
+      function resetOutput() {
+        $('#output').val("");
+        scrollBottom();
       }
 
       function resetInput() {
@@ -52,7 +58,7 @@
       }
 
       function updateCommand(index) {
-        // Check if we are at the defualt index and clear the input
+        // Check if we are at the default index and clear the input
         if (index < 0) {
           resetInput();
           return;
@@ -82,6 +88,7 @@
   <body class="console">
     <textarea id="output" class="console" readOnly></textarea>
     <textarea id="input" class="console" autofocus rows="1"></textarea>
+    <button type="button" onclick="javascript:resetOutput();">Clear Console</button>
 
     <script>
       $("#input").keydown( function (e) {

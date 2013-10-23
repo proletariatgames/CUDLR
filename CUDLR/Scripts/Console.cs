@@ -15,7 +15,7 @@ namespace CUDLR {
 
   public class Console {
 
-    // Max number of lines in the console output
+    // Max number of lines in the buffer
     const int MAX_LINES = 100;
 
     // Maximum number of commands stored in the history
@@ -71,15 +71,27 @@ namespace CUDLR {
       }
     }
 
-    /* Clear all output from console */
-    [Command("clear", "clears console output", false)]
-    public static void Clear() {
-      Instance.m_output.Clear();
-    }
-
     /* Print a list of all console commands */
-    [Command("help", "prints commands", false)]
+    [Command("help", "prints commands", "basic", false)]
     public static void Help() {
+      if (string.IsNullOrEmpty(Instance.m_help)) {
+        var commands = Instance.m_commands.ToList();
+        commands.Sort(delegate(CommandAttribute a, CommandAttribute b) {
+          return a.m_cat.CompareTo(b.m_cat);
+        });
+
+        string help = "";
+        string cat = null;
+        foreach (var cmd in commands) {
+          if (cmd.m_cat != cat) {
+            help += "\n\n  Category: " + cmd.m_cat;
+            cat = cmd.m_cat;
+          }
+          help += string.Format("\n    {0} : {1}", cmd.m_command, cmd.m_help);
+        }
+        Instance.m_help = help;
+      }
+
       Log( string.Format("Commands:{0}", Instance.m_help));
     }
 
@@ -96,7 +108,7 @@ namespace CUDLR {
     /* Logs string to output */
     public static void Log(string str) {
       Instance.m_output.Add(str);
-      if (Instance.m_output.Count > MAX_LINES) 
+      if (Instance.m_output.Count > MAX_LINES)
         Instance.m_output.RemoveAt(0);
     }
 
@@ -110,20 +122,23 @@ namespace CUDLR {
 
     /* Returns the output */
     public static string Output() {
-      return string.Join("\n", Instance.m_output.ToArray());
+      string output = string.Join("\n", Instance.m_output.ToArray());
+      if (!string.IsNullOrEmpty(output))
+        output += "\n";
+      Instance.m_output.Clear();
+      return output;
     }
 
     /* Register a new console command */
-    public static void RegisterCommand(string command, string desc, CommandAttribute.Callback callback, bool runOnMainThread = true) {
+    public static void RegisterCommand(string command, string desc, string cat, CommandAttribute.Callback callback, bool runOnMainThread = true) {
       if (command == null || command.Length == 0) {
         throw new Exception("Command String cannot be empty");
       }
 
-      CommandAttribute cmd = new CommandAttribute(command, desc, runOnMainThread);
+      CommandAttribute cmd = new CommandAttribute(command, desc, cat, runOnMainThread);
       cmd.m_callback = callback;
 
       Instance.m_commands.Add(cmd);
-      Instance.m_help += string.Format("\n{0} : {1}", command, desc);
     }
 
     private void RegisterAttributes() {
@@ -157,10 +172,9 @@ namespace CUDLR {
               Debug.LogError(string.Format("Method {0}.{1} needs a valid command name.", type, method.Name));
               continue;
             }
-         
+
             cmd.m_callback = cb;
             m_commands.Add(cmd);
-            m_help += string.Format("\n{0} : {1}", cmd.m_command, cmd.m_help);
           }
         }
       }
@@ -174,7 +188,7 @@ namespace CUDLR {
     /* Update history with a new command */
     private void RecordCommand(string command) {
       m_history.Insert(0, command);
-      if (m_history.Count > MAX_HISTORY) 
+      if (m_history.Count > MAX_HISTORY)
         m_history.RemoveAt(m_history.Count - 1);
     }
 
@@ -228,6 +242,22 @@ namespace CUDLR {
 
     public CommandTree() {
       m_subcommands = new Dictionary<string, CommandTree>();
+    }
+
+    public List<CommandAttribute> ToList() {
+      HashSet<CommandAttribute> set = new HashSet<CommandAttribute>();
+      _toList(set, this);
+      return set.ToList();
+    }
+
+    private void _toList(HashSet<CommandAttribute> set, CommandTree tree) {
+      if (tree.m_command != null) {
+        set.Add(tree.m_command);
+        return;
+      }
+      var subcmds = tree.m_subcommands.Values.ToArray();
+      foreach (CommandTree childTree in subcmds)
+        tree._toList(set, childTree);
     }
 
     public void Add(CommandAttribute cmd) {
