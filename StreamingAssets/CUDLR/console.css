@@ -1,16 +1,19 @@
-textarea {resize:none;}
+textarea {
+  resize:none;
+}
 
 body.console {
   background-color:black;
 }
+
 textarea.console {
   width:100%;
   background-color:#383838;
   color:#F0F0F0;
   font-size:14px;
-  font-family:;"Courier New", Courier, monospace;
-
+  font-family:"Courier New", Courier, monospace;
 }
+
 #output {
   height:500px;
 }

@@ -15,7 +15,7 @@ namespace CUDLR {
 
   public class Console {
 
-    // Max number of lines in the console output
+    // Max number of lines in the buffer
     const int MAX_LINES = 100;
 
     // Maximum number of commands stored in the history
@@ -71,12 +71,6 @@ namespace CUDLR {
       }
     }
 
-    /* Clear all output from console */
-    [Command("clear", "clears console output", false)]
-    public static void Clear() {
-      Instance.m_output.Clear();
-    }
-
     /* Print a list of all console commands */
     [Command("help", "prints commands", false)]
     public static void Help() {
@@ -96,7 +90,7 @@ namespace CUDLR {
     /* Logs string to output */
     public static void Log(string str) {
       Instance.m_output.Add(str);
-      if (Instance.m_output.Count > MAX_LINES) 
+      if (Instance.m_output.Count > MAX_LINES)
         Instance.m_output.RemoveAt(0);
     }
 
@@ -110,7 +104,11 @@ namespace CUDLR {
 
     /* Returns the output */
     public static string Output() {
-      return string.Join("\n", Instance.m_output.ToArray());
+      string output = string.Join("\n", Instance.m_output.ToArray());
+      if (!string.IsNullOrEmpty(output))
+        output += "\n";
+      Instance.m_output.Clear();
+      return output;
     }
 
     /* Register a new console command */
@@ -157,7 +155,7 @@ namespace CUDLR {
               Debug.LogError(string.Format("Method {0}.{1} needs a valid command name.", type, method.Name));
               continue;
             }
-         
+
             cmd.m_callback = cb;
             m_commands.Add(cmd);
             m_help += string.Format("\n{0} : {1}", cmd.m_command, cmd.m_help);
@@ -174,7 +172,7 @@ namespace CUDLR {
     /* Update history with a new command */
     private void RecordCommand(string command) {
       m_history.Insert(0, command);
-      if (m_history.Count > MAX_HISTORY) 
+      if (m_history.Count > MAX_HISTORY)
         m_history.RemoveAt(m_history.Count - 1);
     }
 
