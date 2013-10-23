@@ -28,7 +28,7 @@ namespace CUDLR {
       context = ctx;
       match = null;
       pass = false;
-      path = context.Request.Url.AbsolutePath;
+      path = WWW.UnEscapeURL(context.Request.Url.AbsolutePath);
       if (path == "/")
         path = "/index.html";
       currentRoute = 0;
