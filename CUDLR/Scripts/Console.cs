@@ -78,8 +78,26 @@ namespace CUDLR {
     }
 
     /* Print a list of all console commands */
-    [Command("help", "prints commands", false)]
+    [Command("help", "prints commands", "basic", false)]
     public static void Help() {
+      if (string.IsNullOrEmpty(Instance.m_help)) {
+        var commands = Instance.m_commands.ToList();
+        commands.Sort(delegate(CommandAttribute a, CommandAttribute b) {
+          return a.m_cat.CompareTo(b.m_cat);
+        });
+
+        string help = "";
+        string cat = null;
+        foreach (var cmd in commands) {
+          if (cmd.m_cat != cat) {
+            help += "\n\n  Category: " + cmd.m_cat;
+            cat = cmd.m_cat;
+          }
+          help += string.Format("\n    {0} : {1}", cmd.m_command, cmd.m_help);
+        }
+        Instance.m_help = help;
+      }
+
       Log( string.Format("Commands:{0}", Instance.m_help));
     }
 
@@ -114,16 +132,15 @@ namespace CUDLR {
     }
 
     /* Register a new console command */
-    public static void RegisterCommand(string command, string desc, CommandAttribute.Callback callback, bool runOnMainThread = true) {
+    public static void RegisterCommand(string command, string desc, string cat, CommandAttribute.Callback callback, bool runOnMainThread = true) {
       if (command == null || command.Length == 0) {
         throw new Exception("Command String cannot be empty");
       }
 
-      CommandAttribute cmd = new CommandAttribute(command, desc, runOnMainThread);
+      CommandAttribute cmd = new CommandAttribute(command, desc, cat, runOnMainThread);
       cmd.m_callback = callback;
 
       Instance.m_commands.Add(cmd);
-      Instance.m_help += string.Format("\n{0} : {1}", command, desc);
     }
 
     private void RegisterAttributes() {
@@ -160,7 +177,6 @@ namespace CUDLR {
          
             cmd.m_callback = cb;
             m_commands.Add(cmd);
-            m_help += string.Format("\n{0} : {1}", cmd.m_command, cmd.m_help);
           }
         }
       }
@@ -228,6 +244,22 @@ namespace CUDLR {
 
     public CommandTree() {
       m_subcommands = new Dictionary<string, CommandTree>();
+    }
+
+    public List<CommandAttribute> ToList() {
+      HashSet<CommandAttribute> set = new HashSet<CommandAttribute>();
+	  _toList(set, this);
+      return set.ToList();
+    }
+
+    private void _toList(HashSet<CommandAttribute> set, CommandTree tree) {
+      if (tree.m_command != null) {
+        set.Add(tree.m_command);
+        return;
+      }
+      var subcmds = tree.m_subcommands.Values.ToArray();
+      foreach (CommandTree childTree in subcmds)
+          tree._toList(set, childTree);
     }
 
     public void Add(CommandAttribute cmd) {

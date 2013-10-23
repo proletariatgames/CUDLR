@@ -10,15 +10,17 @@ namespace CUDLR {
         public delegate void CallbackSimple();
         public delegate void Callback(string[] args);
 
-        public CommandAttribute(string cmd, string help, bool runOnMainThread = true)
+        public CommandAttribute(string cmd, string help, string cat, bool runOnMainThread = true)
         {
           m_command = cmd;
           m_help = help;
+          m_cat = cat;
           m_runOnMainThread = runOnMainThread;
         }
 
         public string m_command;
         public string m_help;
+        public string m_cat;
         public bool m_runOnMainThread;
         public Callback m_callback;
     }
