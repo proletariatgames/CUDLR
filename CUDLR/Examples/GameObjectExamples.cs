@@ -2,6 +2,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Net;
+using System.Linq;
+using MiniJSON;
 
 /**
  * Example console commands for getting information about GameObjects
@@ -46,16 +48,36 @@ public static class GameObjectCommands {
  */
 public static class GameObjectRoutes {
 
-  [CUDLR.Route("^/object/list.json$", @"(GET|HEAD)", true)]
+  [CUDLR.Route("^/objects.json$", @"(GET|HEAD)", true)]
   public static void ListGameObjects(CUDLR.RequestContext context) {
-    string json = "[";
-    UnityEngine.Object[] objects = UnityEngine.Object.FindObjectsOfType(typeof(GameObject));
-    foreach (UnityEngine.Object obj in objects) {
-      // FIXME object names need to be escaped.. use minijson or similar
-      json += string.Format("\"{0}\", ", obj.name);
-    }
-    json = json.TrimEnd(new char[]{',', ' '}) + "]";
+    string[] objects = UnityEngine.Object.FindObjectsOfType(typeof(GameObject)).Select(x => x.name).ToArray();
+    context.Response.WriteString(Json.Serialize(objects), "application/json");
+  }
 
-    context.Response.WriteString(json, "application/json");
+
+  [CUDLR.Route("^/object/([\\w\\s]+).json$", @"(GET|HEAD)", true)]
+  public static void PrintGameObject(CUDLR.RequestContext context) {
+    string obj_name = context.match.Groups[1].Value;
+
+    GameObject obj = GameObject.Find( obj_name );
+    if (obj == null) {
+      context.pass = true;
+      return;
+    }
+
+    Dictionary<string, object> components = new Dictionary<string, object>();
+    foreach (Component component in obj.GetComponents(typeof(Component))) {
+      Dictionary<string, object> members = new Dictionary<string, object>();
+      foreach (MemberInfo member in component.GetType().GetMembers(BindingFlags.Public|BindingFlags.Instance)) {
+        if (member.MemberType == MemberTypes.Field)
+          members[member.Name] = ((FieldInfo)member).GetValue(component);
+
+        if (member.MemberType == MemberTypes.Property)
+          members[member.Name] = ((PropertyInfo)member).GetValue(component, null);
+      }
+      components[component.GetType().ToString()] = members;
+    }
+
+    context.Response.WriteString(Json.Serialize(components), "application/json");
   }
 }
