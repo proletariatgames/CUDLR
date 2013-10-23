@@ -72,7 +72,7 @@ namespace CUDLR {
     }
 
     /* Clear all output from console */
-    [Command("clear", "clears console output", false)]
+    [Command("clear", "clears console output", "basic", false)]
     public static void Clear() {
       Instance.m_output.Clear();
     }
@@ -98,7 +98,7 @@ namespace CUDLR {
         Instance.m_help = help;
       }
 
-      Log( string.Format("Commands:{0}", Instance.m_help));
+      Log( string.Format("\nCommands:{0}", Instance.m_help));
     }
 
     /* Find command based on partial string */
