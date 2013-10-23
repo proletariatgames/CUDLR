@@ -26,18 +26,18 @@ namespace CUDLR {
     [AttributeUsage(AttributeTargets.Method)]
     public class RouteAttribute : Attribute
     {
-        public delegate bool CallbackSimple(HttpListenerContext context);
-        public delegate bool Callback(HttpListenerContext context, Match match);
+        public delegate void Callback(RequestContext context);
 
-        public RouteAttribute(string route, string methods = @"(GET|HEAD)")
+        public RouteAttribute(string route, string methods = @"(GET|HEAD)", bool runOnMainThread = true)
         {
           m_route = new Regex(route, RegexOptions.IgnoreCase);
-          if (methods != null)
-            m_methods = new Regex(methods);
+          m_methods = new Regex(methods);
+          m_runOnMainThread = runOnMainThread;
         }
 
         public Regex m_route;
         public Regex m_methods;
+        public bool m_runOnMainThread;
         public Callback m_callback;
     }
 }

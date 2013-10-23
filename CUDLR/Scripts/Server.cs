@@ -8,19 +8,44 @@ using System.Collections.Specialized;
 using System.Text.RegularExpressions;
 using System.Reflection;
 using System.Linq;
+using System.Threading;
 
 namespace CUDLR {
 
-  public class Server : MonoBehaviour {
+  public class RequestContext
+  {
+    public HttpListenerContext context;
+    public Match match;
+    public bool pass;
+    public string path;
+    public int currentRoute;
 
+    public HttpListenerRequest Request { get { return context.Request; } }
+    public HttpListenerResponse Response { get { return context.Response; } }
+
+    public RequestContext(HttpListenerContext ctx)
+    {
+      context = ctx;
+      match = null;
+      pass = false;
+      path = context.Request.Url.AbsolutePath;
+      if (path == "/")
+        path = "/index.html";
+      currentRoute = 0;
+    }
+  }
+
+
+  public class Server : MonoBehaviour {
 
     [SerializeField]
     public int Port = 55055;
 
+    private static Thread mainThread;
+    private static string fileRoot;
     private static HttpListener listener = new HttpListener();
-    private static string filePath;
-
     private static List<RouteAttribute> registeredRoutes;
+    private static Queue<RequestContext> mainRequests = new Queue<RequestContext>();
 
     // List of supported files
     // FIXME add an api to register new types
@@ -38,16 +63,19 @@ namespace CUDLR {
     };
 
     public virtual void Awake() {
+      mainThread = Thread.CurrentThread;
+      fileRoot = Path.Combine(Application.streamingAssetsPath, "CUDLR");
+
       RegisterRoutes();
       RegisterFileHandlers();
-
-      filePath = Path.Combine(Application.streamingAssetsPath, "CUDLR");
 
       // Start server
       Debug.Log("Starting CUDLR Server on port : " + Port);
       listener.Prefixes.Add("http://*:"+Port+"/");
       listener.Start();
       listener.BeginGetContext(ListenerCallback, null);
+
+      StartCoroutine(HandleRequests());
     }
 
     private void RegisterRoutes() {
@@ -63,16 +91,6 @@ namespace CUDLR {
             continue;
 
           RouteAttribute.Callback cbm = Delegate.CreateDelegate(typeof(RouteAttribute.Callback), method, false) as RouteAttribute.Callback;
-          if (cbm == null)
-          {
-            RouteAttribute.CallbackSimple cb = Delegate.CreateDelegate(typeof(RouteAttribute.CallbackSimple), method, false) as RouteAttribute.CallbackSimple;
-            if (cb != null) {
-              cbm = delegate(HttpListenerContext context, Match match) {
-                return cb(context);
-              };
-            }
-          }
-
           if (cbm == null) {
             Debug.LogError(string.Format("Method {0}.{1} takes the wrong arguments for a console route.", type, method.Name));
             continue;
@@ -92,36 +110,53 @@ namespace CUDLR {
       }
     }
 
-    static bool FileHandler(HttpListenerContext context, Match match, bool download) {
-      string path = Path.Combine(filePath, match.Groups[1].Value);
+    static void FindFileType(RequestContext context, bool download, out string path, out string type) {
+      path = Path.Combine(fileRoot, context.match.Groups[1].Value);
 
-      string type;
       string ext = Path.GetExtension(path).ToLower().TrimStart(new char[] {'.'});
       if (download || !fileTypes.TryGetValue(ext, out type))
         type = "application/octet-stream";
-
-      if (path.Contains("://")) {
-        // Load from URL
-        IEnumerator<WWW> e = LoadURL(path);
-        while (e.MoveNext()) {
-          WWW data = e.Current;
-          if(string.IsNullOrEmpty(data.error))
-            return false;
-
-          context.Response.WriteBytes(path, data.bytes, type, download);
-        }
-      } else if (File.Exists(path)) {
-        context.Response.WriteBytes(path, File.ReadAllBytes(path), type, download);
-      } else {
-        return false;
-      }
-
-      return true;
     }
 
-    static IEnumerator<WWW> LoadURL(string path) {
-      WWW www = new WWW(path);
-      yield return www;
+
+    public delegate void FileHandlerDelegate(RequestContext context, bool download);
+    static void WWWFileHandler(RequestContext context, bool download) {
+      string path, type;
+      FindFileType(context, download, out path, out type);
+
+      WWW req = new WWW(path);
+      while (!req.isDone) {
+        Thread.Sleep(0);
+      }
+
+      if (string.IsNullOrEmpty(req.error)) {
+        context.Response.ContentType = type;
+        if (download)
+          context.Response.AddHeader("Content-disposition", string.Format("attachment; filename={0}", Path.GetFileName(path)));
+
+        context.Response.WriteBytes(req.bytes);
+        return;
+      }
+
+      if (req.error.StartsWith("Couldn't open file")) {
+        context.pass = true;
+      }
+      else {
+        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+        context.Response.StatusDescription = string.Format("Fatal error:\n{0}", req.error);
+      }
+    }
+
+    static void FileHandler(RequestContext context, bool download) {
+      string path, type;
+      FindFileType(context, download, out path, out type);
+
+      if (File.Exists(path)) {
+        context.Response.WriteFile(path, type, download);
+      }
+      else {
+        context.pass = true;
+      }
     }
 
     static void RegisterFileHandlers() {
@@ -129,8 +164,16 @@ namespace CUDLR {
       RouteAttribute downloadRoute = new RouteAttribute(string.Format(@"^/download/(.*\.{0})$", pattern));
       RouteAttribute fileRoute = new RouteAttribute(string.Format(@"^/(.*\.{0})$", pattern));
 
-      downloadRoute.m_callback = delegate(HttpListenerContext context, Match match) { return FileHandler(context, match, true); };
-      fileRoute.m_callback = delegate(HttpListenerContext context, Match match) { return FileHandler(context, match, false); };
+      bool needs_www = fileRoot.Contains("://");
+      downloadRoute.m_runOnMainThread = needs_www;
+      fileRoute.m_runOnMainThread = needs_www;
+
+      FileHandlerDelegate callback = FileHandler;
+      if (needs_www)
+        callback = WWWFileHandler;
+
+      downloadRoute.m_callback = delegate(RequestContext context) { callback(context, true); };
+      fileRoute.m_callback = delegate(RequestContext context) { callback(context, false); };
 
       registeredRoutes.Add(downloadRoute);
       registeredRoutes.Add(fileRoute);
@@ -150,27 +193,39 @@ namespace CUDLR {
     }
 
     void ListenerCallback(IAsyncResult result) {
-      HttpListenerContext context = listener.EndGetContext(result);
+      RequestContext context = new RequestContext(listener.EndGetContext(result));
 
-      string path = context.Request.Url.AbsolutePath;
-      if (path == "/")
-        path = "/index.html";
+      HandleRequest(context);
 
-      // FIXME filter routes on method
+      listener.BeginGetContext(new AsyncCallback(ListenerCallback), null);
+    }
+
+    void HandleRequest(RequestContext context) {
       try {
         bool handled = false;
-        foreach (RouteAttribute route in registeredRoutes) {
-          Match match = route.m_route.Match(path);
+
+        for (; context.currentRoute < registeredRoutes.Count; ++context.currentRoute) {
+          RouteAttribute route = registeredRoutes[context.currentRoute];
+          Match match = route.m_route.Match(context.path);
           if (!match.Success)
             continue;
 
-          if (route.m_methods != null && !route.m_methods.IsMatch(context.Request.HttpMethod))
+          if (!route.m_methods.IsMatch(context.Request.HttpMethod))
             continue;
 
-          if (route.m_callback(context, match)) {
-            handled = true;
-            break;
+          // Upgrade to main thread if necessary
+          if (route.m_runOnMainThread && Thread.CurrentThread != mainThread) {
+            lock (mainRequests) {
+              mainRequests.Enqueue(context);
+            }
+            return;
           }
+
+          context.match = match;
+          route.m_callback(context);
+          handled = !context.pass;
+          if (handled)
+            break;
         }
 
         if (!handled) {
@@ -186,8 +241,21 @@ namespace CUDLR {
       }
 
       context.Response.OutputStream.Close();
+    }
 
-      listener.BeginGetContext(new AsyncCallback(ListenerCallback), null);
+    IEnumerator HandleRequests() {
+      while (true) {
+        while (mainRequests.Count == 0) {
+          yield return new WaitForEndOfFrame();
+        }
+
+        RequestContext context = null;
+        lock (mainRequests) {
+            context = mainRequests.Dequeue();
+        }
+
+        HandleRequest(context);
+      }
     }
   }
 }

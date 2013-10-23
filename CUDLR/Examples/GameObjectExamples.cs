@@ -43,13 +43,11 @@ public static class GameObjectCommands {
 /**
  * Example console route for getting information about GameObjects
  *
-
-// FIXME need main thread support
-
+ */
 public static class GameObjectRoutes {
-  
-  [CUDLR.Route("^/object/list.json$")]
-  public static bool ListGameObjects(HttpListenerContext context) {
+
+  [CUDLR.Route("^/object/list.json$", @"(GET|HEAD)", true)]
+  public static void ListGameObjects(CUDLR.RequestContext context) {
     string json = "[";
     UnityEngine.Object[] objects = UnityEngine.Object.FindObjectsOfType(typeof(GameObject));
     foreach (UnityEngine.Object obj in objects) {
@@ -59,7 +57,5 @@ public static class GameObjectRoutes {
     json = json.TrimEnd(new char[]{',', ' '}) + "]";
 
     context.Response.WriteString(json, "application/json");
-    return true;
   }
 }
-*/

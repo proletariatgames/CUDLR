@@ -157,7 +157,7 @@ namespace CUDLR {
               Debug.LogError(string.Format("Method {0}.{1} needs a valid command name.", type, method.Name));
               continue;
             }
-         
+
             cmd.m_callback = cb;
             m_commands.Add(cmd);
             m_help += string.Format("\n{0} : {1}", cmd.m_command, cmd.m_help);
@@ -180,24 +180,22 @@ namespace CUDLR {
 
     // Our routes
     [Route("^/console/out$")]
-    public static bool Output(HttpListenerContext context) {
+    public static void Output(RequestContext context) {
       context.Response.WriteString(Console.Output());
-      return true;
     }
 
     [Route("^/console/run$")]
-    public static bool Run(HttpListenerContext context) {
+    public static void Run(RequestContext context) {
       string command = context.Request.QueryString.Get("command");
       if (!string.IsNullOrEmpty(command))
         Console.Run(command);
 
       context.Response.StatusCode = (int)HttpStatusCode.OK;
       context.Response.StatusDescription = "OK";
-      return true;
     }
 
     [Route("^/console/commandHistory$")]
-    public static bool History(HttpListenerContext context) {
+    public static void History(RequestContext context) {
       string index = context.Request.QueryString.Get("index");
 
       string previous = null;
@@ -205,11 +203,10 @@ namespace CUDLR {
         previous = Console.PreviousCommand(System.Int32.Parse(index));
 
       context.Response.WriteString(previous);
-      return true;
     }
 
     [Route("^/console/complete$")]
-    public static bool Complete(HttpListenerContext context) {
+    public static void Complete(RequestContext context) {
       string partialCommand = context.Request.QueryString.Get("command");
 
       string found = null;
@@ -217,7 +214,6 @@ namespace CUDLR {
         found = Console.Complete(partialCommand);
 
       context.Response.WriteString(found);
-      return true;
     }
   }
 
