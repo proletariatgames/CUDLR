@@ -8,7 +8,7 @@ using System.Net;
  */
 public static class GameObjectCommands {
 
-  [CUDLR.Command("object list", "lists all the game objects in the scene")]
+  [CUDLR.Command("object list", "lists all the game objects in the scene", "object")]
   public static void ListGameObjects() {
     UnityEngine.Object[] objects = UnityEngine.Object.FindObjectsOfType(typeof(GameObject));
     foreach (UnityEngine.Object obj in objects) {
@@ -16,7 +16,7 @@ public static class GameObjectCommands {
     }
   }
 
-  [CUDLR.Command("object print", "lists properties of the object")]
+  [CUDLR.Command("object print", "lists properties of the object", "object")]
   public static void PrintGameObject(string[] args) {
     if (args.Length < 1) {
       CUDLR.Console.Log( "expected : object print <Object Name>" );
