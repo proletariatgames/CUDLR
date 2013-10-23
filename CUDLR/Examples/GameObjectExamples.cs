@@ -9,7 +9,7 @@ using System;
  */
 public static class GameObjectCommands {
 
-  [CUDLR.Command("object list", "lists all the game objects in the scene")]
+  [CUDLR.Command("object list", "lists all the game objects in the scene", "object")]
   public static void ListGameObjects() {
     Action<Transform, int> deepList = (Transform xform, int indentLevel) => {
       string listing = "- " + xform.name;
@@ -26,7 +26,7 @@ public static class GameObjectCommands {
     }
   }
 
-  [CUDLR.Command("object print", "lists properties of the object")]
+  [CUDLR.Command("object print", "lists properties of the object", "object")]
   public static void PrintGameObject(string[] args) {
     if (args.Length < 1) {
       CUDLR.Console.Log("expected: object print <Object Name>");
