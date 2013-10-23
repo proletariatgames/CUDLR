@@ -246,7 +246,7 @@ namespace CUDLR {
 
     public List<CommandAttribute> ToList() {
       HashSet<CommandAttribute> set = new HashSet<CommandAttribute>();
-	  _toList(set, this);
+      _toList(set, this);
       return set.ToList();
     }
 
@@ -257,7 +257,7 @@ namespace CUDLR {
       }
       var subcmds = tree.m_subcommands.Values.ToArray();
       foreach (CommandTree childTree in subcmds)
-          tree._toList(set, childTree);
+        tree._toList(set, childTree);
     }
 
     public void Add(CommandAttribute cmd) {
