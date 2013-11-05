@@ -19,7 +19,7 @@ We wrote CUDLR to use in [Proletariat's](http://www.proletariat.com) upcoming ga
  
 How do I use CUDLR?
 ----
-* Download the unitypackage from github or the [Unity Asset Store](https://www.assetstore.unity3d.com/#/content/XXX) and import it in to your project.
+* Download the unitypackage from github or the [Unity Asset Store](https://www.assetstore.unity3d.com/#/content/12294) and import it in to your project.
 * Create an empty GameObject in the scene and add the CUDLR->Server component.
 * Set the port on the component (default value is 55055).
 * Add the CUDLR.Command attribute to your code.
