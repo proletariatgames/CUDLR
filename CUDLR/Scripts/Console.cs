@@ -127,40 +127,41 @@ namespace CUDLR {
     }
 
     private void RegisterAttributes() {
-      foreach(Type type in Assembly.GetExecutingAssembly().GetTypes()) {
+      foreach(Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
+        foreach(Type type in assembly.GetTypes()) {
+          // FIXME add support for non-static methods (FindObjectByType?)
+          foreach(MethodInfo method in type.GetMethods(BindingFlags.Public|BindingFlags.Static)) {
+            CommandAttribute[] attrs = method.GetCustomAttributes(typeof(CommandAttribute), true) as CommandAttribute[];
+            if (attrs.Length == 0)
+              continue;
 
-        // FIXME add support for non-static methods (FindObjectByType?)
-        foreach(MethodInfo method in type.GetMethods(BindingFlags.Public|BindingFlags.Static)) {
-          CommandAttribute[] attrs = method.GetCustomAttributes(typeof(CommandAttribute), true) as CommandAttribute[];
-          if (attrs.Length == 0)
-            continue;
-
-          CommandAttribute.Callback cb = Delegate.CreateDelegate(typeof(CommandAttribute.Callback), method, false) as CommandAttribute.Callback;
-          if (cb == null)
-          {
-            CommandAttribute.CallbackSimple cbs = Delegate.CreateDelegate(typeof(CommandAttribute.CallbackSimple), method, false) as CommandAttribute.CallbackSimple;
-            if (cbs != null) {
-              cb = delegate(string[] args) {
-                cbs();
-              };
+            CommandAttribute.Callback cb = Delegate.CreateDelegate(typeof(CommandAttribute.Callback), method, false) as CommandAttribute.Callback;
+            if (cb == null)
+            {
+              CommandAttribute.CallbackSimple cbs = Delegate.CreateDelegate(typeof(CommandAttribute.CallbackSimple), method, false) as CommandAttribute.CallbackSimple;
+              if (cbs != null) {
+                cb = delegate(string[] args) {
+                  cbs();
+                };
+              }
             }
-          }
 
-          if (cb == null) {
-            Debug.LogError(string.Format("Method {0}.{1} takes the wrong arguments for a console command.", type, method.Name));
-            continue;
-          }
-
-          // try with a bare action
-          foreach(CommandAttribute cmd in attrs) {
-            if (string.IsNullOrEmpty(cmd.m_command)) {
-              Debug.LogError(string.Format("Method {0}.{1} needs a valid command name.", type, method.Name));
+            if (cb == null) {
+              Debug.LogError(string.Format("Method {0}.{1} takes the wrong arguments for a console command.", type, method.Name));
               continue;
             }
 
-            cmd.m_callback = cb;
-            m_commands.Add(cmd);
-            m_help += string.Format("\n{0} : {1}", cmd.m_command, cmd.m_help);
+            // try with a bare action
+            foreach(CommandAttribute cmd in attrs) {
+              if (string.IsNullOrEmpty(cmd.m_command)) {
+                Debug.LogError(string.Format("Method {0}.{1} needs a valid command name.", type, method.Name));
+                continue;
+              }
+
+              cmd.m_callback = cb;
+              m_commands.Add(cmd);
+              m_help += string.Format("\n{0} : {1}", cmd.m_command, cmd.m_help);
+            }
           }
         }
       }

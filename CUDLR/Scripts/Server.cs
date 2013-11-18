@@ -82,29 +82,31 @@ namespace CUDLR {
 
       registeredRoutes = new List<RouteAttribute>();
 
-      foreach(Type type in Assembly.GetExecutingAssembly().GetTypes()) {
 
-        // FIXME add support for non-static methods (FindObjectByType?)
-        foreach(MethodInfo method in type.GetMethods(BindingFlags.Public|BindingFlags.Static)) {
-          RouteAttribute[] attrs = method.GetCustomAttributes(typeof(RouteAttribute), true) as RouteAttribute[];
-          if (attrs.Length == 0)
-            continue;
+      foreach(Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
+        foreach(Type type in assembly.GetTypes()) {
+          // FIXME add support for non-static methods (FindObjectByType?)
+          foreach(MethodInfo method in type.GetMethods(BindingFlags.Public|BindingFlags.Static)) {
+            RouteAttribute[] attrs = method.GetCustomAttributes(typeof(RouteAttribute), true) as RouteAttribute[];
+            if (attrs.Length == 0)
+              continue;
 
-          RouteAttribute.Callback cbm = Delegate.CreateDelegate(typeof(RouteAttribute.Callback), method, false) as RouteAttribute.Callback;
-          if (cbm == null) {
-            Debug.LogError(string.Format("Method {0}.{1} takes the wrong arguments for a console route.", type, method.Name));
-            continue;
-          }
-
-          // try with a bare action
-          foreach(RouteAttribute route in attrs) {
-            if (route.m_route == null) {
-              Debug.LogError(string.Format("Method {0}.{1} needs a valid route regexp.", type, method.Name));
+            RouteAttribute.Callback cbm = Delegate.CreateDelegate(typeof(RouteAttribute.Callback), method, false) as RouteAttribute.Callback;
+            if (cbm == null) {
+              Debug.LogError(string.Format("Method {0}.{1} takes the wrong arguments for a console route.", type, method.Name));
               continue;
             }
 
-            route.m_callback = cbm;
-            registeredRoutes.Add(route);
+            // try with a bare action
+            foreach(RouteAttribute route in attrs) {
+              if (route.m_route == null) {
+                Debug.LogError(string.Format("Method {0}.{1} needs a valid route regexp.", type, method.Name));
+                continue;
+              }
+
+              route.m_callback = cbm;
+              registeredRoutes.Add(route);
+            }
           }
         }
       }
