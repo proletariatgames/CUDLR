@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Linq;
@@ -218,7 +219,7 @@ namespace CUDLR {
     }
   }
 
-  class CommandTree {
+  class CommandTree : IEnumerable<CommandAttribute> {
 
     private Dictionary<string, CommandTree> m_subcommands;
     private CommandAttribute m_command;
@@ -242,6 +243,22 @@ namespace CUDLR {
         m_subcommands[token] = new CommandTree();
       }
       m_subcommands[token]._add(commands, command_index + 1, cmd);
+    }
+
+    public IEnumerator<CommandAttribute> GetEnumerator() {
+      if (m_command != null && m_command.m_command != null)
+        yield return m_command;
+
+      foreach(KeyValuePair<string, CommandTree> entry in m_subcommands) {
+        foreach(CommandAttribute cmd in entry.Value) {
+          if (cmd != null && cmd.m_command != null)
+            yield return cmd;
+        }
+      }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() {
+      return GetEnumerator();
     }
 
     public string Complete(string partialCommand) {
