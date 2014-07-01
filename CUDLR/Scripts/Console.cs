@@ -29,7 +29,6 @@ namespace CUDLR {
     private CommandTree m_commands;
     private List<string> m_output;
     private List<string> m_history;
-    private string m_help;
     private Queue<QueuedCommand> m_commandQueue;
 
     private Console() {
@@ -81,7 +80,13 @@ namespace CUDLR {
     /* Print a list of all console commands */
     [Command("help", "prints commands", false)]
     public static void Help() {
-      Log( string.Format("Commands:{0}", Instance.m_help));
+
+      string help = "Commands:";
+      foreach (CommandAttribute cmd in Instance.m_commands.OrderBy(m=>m.m_command)) {
+        help += string.Format("\n{0} : {1}", cmd.m_command, cmd.m_help);
+      }
+
+      Log(help);
     }
 
     /* Find command based on partial string */
@@ -97,7 +102,7 @@ namespace CUDLR {
     /* Logs string to output */
     public static void Log(string str) {
       Instance.m_output.Add(str);
-      if (Instance.m_output.Count > MAX_LINES) 
+      if (Instance.m_output.Count > MAX_LINES)
         Instance.m_output.RemoveAt(0);
     }
 
@@ -124,7 +129,6 @@ namespace CUDLR {
       cmd.m_callback = callback;
 
       Instance.m_commands.Add(cmd);
-      Instance.m_help += string.Format("\n{0} : {1}", command, desc);
     }
 
     private void RegisterAttributes() {
@@ -161,7 +165,6 @@ namespace CUDLR {
 
               cmd.m_callback = cb;
               m_commands.Add(cmd);
-              m_help += string.Format("\n{0} : {1}", cmd.m_command, cmd.m_help);
             }
           }
         }
