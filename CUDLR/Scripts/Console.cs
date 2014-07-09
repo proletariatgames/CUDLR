@@ -275,8 +275,8 @@ namespace CUDLR {
       } else if (partialCommand.Length == index) {
         // This is valid but incomplete.. print all of the subcommands
         Console.LogCommand(result);
-        foreach (string key in m_subcommands.Keys) {
-          Console.Log( result + " " + key);
+        foreach (string key in m_subcommands.Keys.OrderBy(m=>m)) {
+          Console.Log(result + " " + key);
         }
         return result + " ";
       } else if (partialCommand.Length == (index+1)) {
@@ -288,7 +288,7 @@ namespace CUDLR {
 
         // Find any subcommands that match our partial command
         List<string> matches = new List<string>();
-        foreach (string key in m_subcommands.Keys) {
+        foreach (string key in m_subcommands.Keys.OrderBy(m=>m)) {
           if (key.StartsWith(partial)) {
             matches.Add(key);
           }
@@ -301,7 +301,7 @@ namespace CUDLR {
           // list all the options for the user and return partial
           Console.LogCommand(result + partial);
           foreach (string match in matches) {
-            Console.Log( result + match);
+            Console.Log(result + match);
           }
         }
         return result + partial;
