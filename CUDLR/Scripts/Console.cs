@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Linq;
 using System.Reflection;
@@ -14,7 +15,25 @@ namespace CUDLR {
   }
 
   public class Console {
+     
+     /* Struct containing console message and color data */
+	 struct ConsoleMessage
+      {
+          public string message;
+          public Color32 color;
 
+          public ConsoleMessage(string message)
+          {
+              this.message = message;
+              color = new Color32(240, 240, 240, 255);  //Default message color if not specified
+          }
+          public ConsoleMessage(string message, Color32 color)
+          {
+              this.message = message;
+              this.color = color;
+          }
+      }
+	  
     // Max number of lines in the console output
     const int MAX_LINES = 100;
 
@@ -26,16 +45,18 @@ namespace CUDLR {
 
     private static Console instance;
     private CommandTree m_commands;
-    private List<string> m_output;
+    private List<ConsoleMessage> m_output;
     private List<string> m_history;
     private string m_help;
     private Queue<QueuedCommand> m_commandQueue;
+    private Dictionary<string, Color32> m_messageColors;
 
     private Console() {
       m_commands = new CommandTree();
-      m_output = new List<string>();
+      m_output = new List<ConsoleMessage>();
       m_history = new List<string>();
       m_commandQueue = new Queue<QueuedCommand>();
+      m_messageColors = new Dictionary<string, Color32>();
 
       RegisterAttributes();
     }
@@ -95,9 +116,23 @@ namespace CUDLR {
 
     /* Logs string to output */
     public static void Log(string str) {
-      Instance.m_output.Add(str);
-      if (Instance.m_output.Count > MAX_LINES) 
-        Instance.m_output.RemoveAt(0);
+        Log(str, "");
+    }
+
+    /* Logs string to output with specified color corresponding to the message color name */
+    public static void Log(string str, string colorName)
+    {
+        if((str != "") && (Instance.m_messageColors.ContainsKey(colorName)))
+        {
+            Instance.m_output.Add(new ConsoleMessage(str, Instance.m_messageColors[colorName]));
+        }
+        else
+        {
+            Instance.m_output.Add(new ConsoleMessage(str));
+        }
+
+        if (Instance.m_output.Count > MAX_LINES)
+            Instance.m_output.RemoveAt(0);
     }
 
     /* Callback for Unity logging */
@@ -109,8 +144,32 @@ namespace CUDLR {
     }
 
     /* Returns the output */
-    public static string Output() {
-      return string.Join("\n", Instance.m_output.ToArray());
+    public static string Output()
+    {
+        return Output(false);
+    }
+
+    /* Returns the output, if useHtml is true will use divs instead of \n for logging */
+    public static string Output(bool useHtml) {
+        StringBuilder s = new StringBuilder();
+        foreach (ConsoleMessage m in Instance.m_output)
+        {
+            if (useHtml)
+            {
+                //Use regex to remove most valid HTML... FIX - won't catch all cases unfortunately but could be improved later
+                string htmlString = Regex.Replace(m.message, @"<[^>]*>", String.Empty);
+                s.Append("<div style='color:#" + m.color.r.ToString("X2") + m.color.g.ToString("X2") + m.color.b.ToString("X2") + ";'>");
+                s.Append(htmlString);
+                s.Append("</div>");
+            }
+            else
+            {
+                s.Append(m.message);
+                s.Append("\n");
+            }
+        }
+        return s.ToString(); ;
+
     }
 
     /* Register a new console command */
@@ -126,6 +185,14 @@ namespace CUDLR {
       Instance.m_help += string.Format("\n{0} : {1}", command, desc);
     }
 
+    /* Register user defined message colors */
+    public static void RegisterMessageColors(MessageColors[] messageColors)
+    {
+        foreach (MessageColors mc in messageColors)
+        {
+            Instance.m_messageColors.Add(mc.name, mc.color);
+        }
+    }
     private void RegisterAttributes() {
       foreach(Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
         foreach(Type type in assembly.GetTypes()) {
@@ -182,7 +249,7 @@ namespace CUDLR {
     // Our routes
     [Route("^/console/out$")]
     public static void Output(RequestContext context) {
-      context.Response.WriteString(Console.Output());
+      context.Response.WriteString(Console.Output(true));
     }
 
     [Route("^/console/run$")]

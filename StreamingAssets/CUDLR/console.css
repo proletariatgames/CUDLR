@@ -1,4 +1,5 @@
 textarea {resize:none;}
+div {resize:none;}
 
 body.console {
   background-color:black;
@@ -8,9 +9,24 @@ textarea.console {
   background-color:#383838;
   color:#F0F0F0;
   font-size:14px;
-  font-family:;"Courier New", Courier, monospace;
+  font-family:"Courier New", Courier, monospace;
 
 }
+
+div.console {
+    -moz-appearance: textfield-multiline;
+    -webkit-appearance: textarea;
+    border: 1px solid gray;
+    overflow: auto;
+    padding: 2px;
+    width:100%;
+    background-color:#383838;
+    color:#F0F0F0;
+    font-size:14px;
+    font-family:"Courier New", Courier, monospace;
+    white-space: pre;
+}
+
 #output {
   height:500px;
 }

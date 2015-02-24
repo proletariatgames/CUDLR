@@ -35,12 +35,20 @@ namespace CUDLR {
     }
   }
 
+  //Struct to contain message name and colors
+  [Serializable]
+  public struct MessageColors
+  {
+      public string name;
+      public Color color;
+  }
 
   public class Server : MonoBehaviour {
 
     [SerializeField]
     public int Port = 55055;
 
+    public MessageColors[] messageColors;
     private static Thread mainThread;
     private static string fileRoot;
     private static HttpListener listener = new HttpListener();
@@ -68,6 +76,7 @@ namespace CUDLR {
 
       RegisterRoutes();
       RegisterFileHandlers();
+      Console.RegisterMessageColors(messageColors);  //Ensure the console instance also is aware of the user specified colors
 
       // Start server
       Debug.Log("Starting CUDLR Server on port : " + Port);
