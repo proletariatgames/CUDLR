@@ -146,30 +146,46 @@ namespace CUDLR {
     /* Returns the output */
     public static string Output()
     {
-        return Output(false);
-    }
-
-    /* Returns the output, if useHtml is true will use divs instead of \n for logging */
-    public static string Output(bool useHtml) {
         StringBuilder s = new StringBuilder();
         foreach (ConsoleMessage m in Instance.m_output)
         {
-            if (useHtml)
-            {
-                //Use regex to remove most valid HTML... FIX - won't catch all cases unfortunately but could be improved later
-                string htmlString = Regex.Replace(m.message, @"<[^>]*>", String.Empty);
-                s.Append("<div style='color:#" + m.color.r.ToString("X2") + m.color.g.ToString("X2") + m.color.b.ToString("X2") + ";'>");
-                s.Append(htmlString);
-                s.Append("</div>");
-            }
-            else
-            {
-                s.Append(m.message);
-                s.Append("\n");
-            }
+            //HTML Encode the string message to prevent the div's innerText from being parsed as HTML
+            string htmlString = HtmlEncode(m.message);
+            s.Append("<div style='color:#" + m.color.r.ToString("X2") + m.color.g.ToString("X2") + m.color.b.ToString("X2") + ";'>");
+            s.Append(htmlString);
+            s.Append("</div>");
         }
         return s.ToString(); ;
+    }
 
+    private static string HtmlEncode(string text)
+    {
+        if (text == null) return null;
+
+        StringBuilder s = new StringBuilder(text.Length);
+        for (int i = 0; i < text.Length; i++)
+        {
+            switch (text[i])
+            {
+
+                case '<':
+                    s.Append("&lt;");
+                    break;
+                case '>':
+                    s.Append("&gt;");
+                    break;
+                case '"':
+                    s.Append("&quot;");
+                    break;
+                case '&':
+                    s.Append("&amp;");
+                    break;
+                default:
+                    s.Append(text[i]);
+                    break;
+            }
+        }
+        return s.ToString();
     }
 
     /* Register a new console command */
@@ -249,7 +265,7 @@ namespace CUDLR {
     // Our routes
     [Route("^/console/out$")]
     public static void Output(RequestContext context) {
-      context.Response.WriteString(Console.Output(true));
+      context.Response.WriteString(Console.Output());
     }
 
     [Route("^/console/run$")]
