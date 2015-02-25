@@ -16,11 +16,15 @@ We wrote CUDLR to use in [Proletariat's](http://www.proletariat.com) upcoming ga
 * Command history
 * Standard text-entry shortcuts (ctrl-a, ctrl-e, etc)
 * Uses standard HTML/CSS for layout
+* Supports displaying of context specific colored messages
  
 How do I use CUDLR?
 ----
 * Download the unitypackage from github or the [Unity Asset Store](https://www.assetstore.unity3d.com/#/content/12294) and import it in to your project.
 * Create an empty GameObject in the scene and add the CUDLR->Server component.
+* To use message coloring, on the empty GameObject containing the Server script, update the "Message Colors" array to 
+  define the colors used by your game's logging. Both Name and Color for each element should be defined, and Name
+  should be unique for each color.
 * Set the port on the component (default value is 55055).
 * Add the CUDLR.Command attribute to your code.
 * Run the game and connect to http://localhost:55055 with your browser.
@@ -54,6 +58,11 @@ Delegate functions can output data to the console by calling the CUDLR Console L
 CUDLR.Console.Log( <Log String> );
 ```
 
+To use message coloring defined on the GameObject containing the Server script, use the alternate CUDLR Console Log function, specifying the color Name (as specified on the Server GameObject) as the second parameter:
+
+```
+CUDLR.Console.Log( <Log String> , <color name as defined on the Server GameObject> );
+```
 Adding Additional Routes
 ----
 
