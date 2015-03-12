@@ -128,6 +128,10 @@ namespace CUDLR {
 
     private void RegisterAttributes() {
       foreach(Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
+        // HACK: IL2CPP crashes if you attempt to get the methods of some classes in these assemblies.
+        if (assembly.FullName.StartsWith("System") || assembly.FullName.StartsWith("mscorlib")) {
+          continue;
+        }
         foreach(Type type in assembly.GetTypes()) {
           // FIXME add support for non-static methods (FindObjectByType?)
           foreach(MethodInfo method in type.GetMethods(BindingFlags.Public|BindingFlags.Static)) {
