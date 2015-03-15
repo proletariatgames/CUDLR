@@ -2,7 +2,7 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;   
 using System.Linq;
 using System.Reflection;
 using System.Net;
@@ -49,14 +49,12 @@ namespace CUDLR {
     private List<string> m_history;
     private string m_help;
     private Queue<QueuedCommand> m_commandQueue;
-    private Dictionary<string, Color32> m_messageColors;
 
     private Console() {
       m_commands = new CommandTree();
       m_output = new List<ConsoleMessage>();
       m_history = new List<string>();
       m_commandQueue = new Queue<QueuedCommand>();
-      m_messageColors = new Dictionary<string, Color32>();
 
       RegisterAttributes();
     }
@@ -116,21 +114,14 @@ namespace CUDLR {
 
     /* Logs string to output */
     public static void Log(string str) {
-        Log(str, "");
+        Log(str, new Color32(240, 240, 240, 255)); //Default message color if not specified);
     }
 
-    /* Logs string to output with specified color corresponding to the message color name */
-    public static void Log(string str, string colorName)
+    /* Logs string to output using the specified color */
+    public static void Log(string str, Color32 color)
     {
-        if((str != "") && (Instance.m_messageColors.ContainsKey(colorName)))
-        {
-            Instance.m_output.Add(new ConsoleMessage(str, Instance.m_messageColors[colorName]));
-        }
-        else
-        {
-            Instance.m_output.Add(new ConsoleMessage(str));
-        }
-
+        Instance.m_output.Add(new ConsoleMessage(str, color));
+        
         if (Instance.m_output.Count > MAX_LINES)
             Instance.m_output.RemoveAt(0);
     }
@@ -201,14 +192,6 @@ namespace CUDLR {
       Instance.m_help += string.Format("\n{0} : {1}", command, desc);
     }
 
-    /* Register user defined message colors */
-    public static void RegisterMessageColors(MessageColors[] messageColors)
-    {
-        foreach (MessageColors mc in messageColors)
-        {
-            Instance.m_messageColors.Add(mc.name, mc.color);
-        }
-    }
     private void RegisterAttributes() {
       foreach(Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
         foreach(Type type in assembly.GetTypes()) {
