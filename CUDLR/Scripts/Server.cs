@@ -78,39 +78,51 @@ namespace CUDLR {
       StartCoroutine(HandleRequests());
     }
 
+    public void OnApplicationPause(bool paused) {
+      if (paused) {
+        listener.Stop();
+      }
+      else {
+        listener.Start();
+        listener.BeginGetContext(ListenerCallback, null);
+       }
+    }
 
+    public virtual void OnDestroy() {
+      listener.Close();
+    }
 
     private void RegisterRoutes() {
       if ( registeredRoutes == null ) {
         registeredRoutes = new List<RouteAttribute>();
 
-      foreach(Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
-        foreach(Type type in assembly.GetTypes()) {
-          // FIXME add support for non-static methods (FindObjectByType?)
-          foreach(MethodInfo method in type.GetMethods(BindingFlags.Public|BindingFlags.Static)) {
-            RouteAttribute[] attrs = method.GetCustomAttributes(typeof(RouteAttribute), true) as RouteAttribute[];
-            if (attrs.Length == 0)
-              continue;
+        foreach(Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
+          foreach(Type type in assembly.GetTypes()) {
+            // FIXME add support for non-static methods (FindObjectByType?)
+            foreach(MethodInfo method in type.GetMethods(BindingFlags.Public|BindingFlags.Static)) {
+              RouteAttribute[] attrs = method.GetCustomAttributes(typeof(RouteAttribute), true) as RouteAttribute[];
+              if (attrs.Length == 0)
+                continue;
 
-            RouteAttribute.Callback cbm = Delegate.CreateDelegate(typeof(RouteAttribute.Callback), method, false) as RouteAttribute.Callback;
-            if (cbm == null) {
-              Debug.LogError(string.Format("Method {0}.{1} takes the wrong arguments for a console route.", type, method.Name));
-              continue;
-            }
-
-            // try with a bare action
-            foreach(RouteAttribute route in attrs) {
-              if (route.m_route == null) {
-                Debug.LogError(string.Format("Method {0}.{1} needs a valid route regexp.", type, method.Name));
+              RouteAttribute.Callback cbm = Delegate.CreateDelegate(typeof(RouteAttribute.Callback), method, false) as RouteAttribute.Callback;
+              if (cbm == null) {
+                Debug.LogError(string.Format("Method {0}.{1} takes the wrong arguments for a console route.", type, method.Name));
                 continue;
               }
 
-              route.m_callback = cbm;
-              registeredRoutes.Add(route);
+              // try with a bare action
+              foreach(RouteAttribute route in attrs) {
+                if (route.m_route == null) {
+                  Debug.LogError(string.Format("Method {0}.{1} needs a valid route regexp.", type, method.Name));
+                  continue;
+                }
+
+                route.m_callback = cbm;
+                registeredRoutes.Add(route);
+              }
             }
           }
         }
-      }
         RegisterFileHandlers();
       }
     }
@@ -186,15 +198,15 @@ namespace CUDLR {
 
     void OnEnable() {
       if (RegisterLogCallback) {
-      // Capture Console Logs
-      Application.RegisterLogCallback(Console.LogCallback);
-    }
+        // Capture Console Logs
+        Application.RegisterLogCallback(Console.LogCallback);
+      }
     }
 
     void OnDisable() {
       if (RegisterLogCallback) {
-      Application.RegisterLogCallback(null);
-    }
+        Application.RegisterLogCallback(null);
+      }
     }
 
     void Update() {
@@ -206,7 +218,9 @@ namespace CUDLR {
 
       HandleRequest(context);
 
-      listener.BeginGetContext(new AsyncCallback(ListenerCallback), null);
+      if (listener.IsListening) {
+        listener.BeginGetContext(ListenerCallback, null);
+      }
     }
 
     void HandleRequest(RequestContext context) {
