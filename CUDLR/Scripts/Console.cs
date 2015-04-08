@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Linq;
@@ -28,7 +29,6 @@ namespace CUDLR {
     private CommandTree m_commands;
     private List<string> m_output;
     private List<string> m_history;
-    private string m_help;
     private Queue<QueuedCommand> m_commandQueue;
 
     private Console() {
@@ -80,7 +80,13 @@ namespace CUDLR {
     /* Print a list of all console commands */
     [Command("help", "prints commands", false)]
     public static void Help() {
-      Log( string.Format("Commands:{0}", Instance.m_help));
+
+      string help = "Commands:";
+      foreach (CommandAttribute cmd in Instance.m_commands.OrderBy(m=>m.m_command)) {
+        help += string.Format("\n{0} : {1}", cmd.m_command, cmd.m_help);
+      }
+
+      Log(help);
     }
 
     /* Find command based on partial string */
@@ -96,7 +102,7 @@ namespace CUDLR {
     /* Logs string to output */
     public static void Log(string str) {
       Instance.m_output.Add(str);
-      if (Instance.m_output.Count > MAX_LINES) 
+      if (Instance.m_output.Count > MAX_LINES)
         Instance.m_output.RemoveAt(0);
     }
 
@@ -123,7 +129,6 @@ namespace CUDLR {
       cmd.m_callback = callback;
 
       Instance.m_commands.Add(cmd);
-      Instance.m_help += string.Format("\n{0} : {1}", command, desc);
     }
 
     private void RegisterAttributes() {
@@ -164,7 +169,6 @@ namespace CUDLR {
 
               cmd.m_callback = cb;
               m_commands.Add(cmd);
-              m_help += string.Format("\n{0} : {1}", cmd.m_command, cmd.m_help);
             }
           }
         }
@@ -222,7 +226,7 @@ namespace CUDLR {
     }
   }
 
-  class CommandTree {
+  class CommandTree : IEnumerable<CommandAttribute> {
 
     private Dictionary<string, CommandTree> m_subcommands;
     private CommandAttribute m_command;
@@ -248,6 +252,22 @@ namespace CUDLR {
       m_subcommands[token]._add(commands, command_index + 1, cmd);
     }
 
+    public IEnumerator<CommandAttribute> GetEnumerator() {
+      if (m_command != null && m_command.m_command != null)
+        yield return m_command;
+
+      foreach(KeyValuePair<string, CommandTree> entry in m_subcommands) {
+        foreach(CommandAttribute cmd in entry.Value) {
+          if (cmd != null && cmd.m_command != null)
+            yield return cmd;
+        }
+      }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() {
+      return GetEnumerator();
+    }
+
     public string Complete(string partialCommand) {
       return _complete(partialCommand.Split(' '), 0, "");
     }
@@ -259,8 +279,8 @@ namespace CUDLR {
       } else if (partialCommand.Length == index) {
         // This is valid but incomplete.. print all of the subcommands
         Console.LogCommand(result);
-        foreach (string key in m_subcommands.Keys) {
-          Console.Log( result + " " + key);
+        foreach (string key in m_subcommands.Keys.OrderBy(m=>m)) {
+          Console.Log(result + " " + key);
         }
         return result + " ";
       } else if (partialCommand.Length == (index+1)) {
@@ -272,7 +292,7 @@ namespace CUDLR {
 
         // Find any subcommands that match our partial command
         List<string> matches = new List<string>();
-        foreach (string key in m_subcommands.Keys) {
+        foreach (string key in m_subcommands.Keys.OrderBy(m=>m)) {
           if (key.StartsWith(partial)) {
             matches.Add(key);
           }
@@ -285,7 +305,7 @@ namespace CUDLR {
           // list all the options for the user and return partial
           Console.LogCommand(result + partial);
           foreach (string match in matches) {
-            Console.Log( result + match);
+            Console.Log(result + match);
           }
         }
         return result + partial;
