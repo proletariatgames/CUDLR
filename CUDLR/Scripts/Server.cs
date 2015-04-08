@@ -41,6 +41,9 @@ namespace CUDLR {
     [SerializeField]
     public int Port = 55055;
 
+    [SerializeField]
+    public bool RegisterLogCallback = false;
+
     private static Thread mainThread;
     private static string fileRoot;
     private static HttpListener listener = new HttpListener();
@@ -66,9 +69,6 @@ namespace CUDLR {
       mainThread = Thread.CurrentThread;
       fileRoot = Path.Combine(Application.streamingAssetsPath, "CUDLR");
 
-      RegisterRoutes();
-      RegisterFileHandlers();
-
       // Start server
       Debug.Log("Starting CUDLR Server on port : " + Port);
       listener.Prefixes.Add("http://*:"+Port+"/");
@@ -78,37 +78,52 @@ namespace CUDLR {
       StartCoroutine(HandleRequests());
     }
 
+    public void OnApplicationPause(bool paused) {
+      if (paused) {
+        listener.Stop();
+      }
+      else {
+        listener.Start();
+        listener.BeginGetContext(ListenerCallback, null);
+       }
+    }
+
+    public virtual void OnDestroy() {
+      listener.Close();
+    }
+
     private void RegisterRoutes() {
+      if ( registeredRoutes == null ) {
+        registeredRoutes = new List<RouteAttribute>();
 
-      registeredRoutes = new List<RouteAttribute>();
+        foreach(Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
+          foreach(Type type in assembly.GetTypes()) {
+            // FIXME add support for non-static methods (FindObjectByType?)
+            foreach(MethodInfo method in type.GetMethods(BindingFlags.Public|BindingFlags.Static)) {
+              RouteAttribute[] attrs = method.GetCustomAttributes(typeof(RouteAttribute), true) as RouteAttribute[];
+              if (attrs.Length == 0)
+                continue;
 
-
-      foreach(Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
-        foreach(Type type in assembly.GetTypes()) {
-          // FIXME add support for non-static methods (FindObjectByType?)
-          foreach(MethodInfo method in type.GetMethods(BindingFlags.Public|BindingFlags.Static)) {
-            RouteAttribute[] attrs = method.GetCustomAttributes(typeof(RouteAttribute), true) as RouteAttribute[];
-            if (attrs.Length == 0)
-              continue;
-
-            RouteAttribute.Callback cbm = Delegate.CreateDelegate(typeof(RouteAttribute.Callback), method, false) as RouteAttribute.Callback;
-            if (cbm == null) {
-              Debug.LogError(string.Format("Method {0}.{1} takes the wrong arguments for a console route.", type, method.Name));
-              continue;
-            }
-
-            // try with a bare action
-            foreach(RouteAttribute route in attrs) {
-              if (route.m_route == null) {
-                Debug.LogError(string.Format("Method {0}.{1} needs a valid route regexp.", type, method.Name));
+              RouteAttribute.Callback cbm = Delegate.CreateDelegate(typeof(RouteAttribute.Callback), method, false) as RouteAttribute.Callback;
+              if (cbm == null) {
+                Debug.LogError(string.Format("Method {0}.{1} takes the wrong arguments for a console route.", type, method.Name));
                 continue;
               }
 
-              route.m_callback = cbm;
-              registeredRoutes.Add(route);
+              // try with a bare action
+              foreach(RouteAttribute route in attrs) {
+                if (route.m_route == null) {
+                  Debug.LogError(string.Format("Method {0}.{1} needs a valid route regexp.", type, method.Name));
+                  continue;
+                }
+
+                route.m_callback = cbm;
+                registeredRoutes.Add(route);
+              }
             }
           }
         }
+        RegisterFileHandlers();
       }
     }
 
@@ -182,12 +197,16 @@ namespace CUDLR {
     }
 
     void OnEnable() {
-      // Capture Console Logs
-      Application.RegisterLogCallback(Console.LogCallback);
+      if (RegisterLogCallback) {
+        // Capture Console Logs
+        Application.RegisterLogCallback(Console.LogCallback);
+      }
     }
 
     void OnDisable() {
-      Application.RegisterLogCallback(null);
+      if (RegisterLogCallback) {
+        Application.RegisterLogCallback(null);
+      }
     }
 
     void Update() {
@@ -199,10 +218,14 @@ namespace CUDLR {
 
       HandleRequest(context);
 
-      listener.BeginGetContext(new AsyncCallback(ListenerCallback), null);
+      if (listener.IsListening) {
+        listener.BeginGetContext(ListenerCallback, null);
+      }
     }
 
     void HandleRequest(RequestContext context) {
+      RegisterRoutes();
+
       try {
         bool handled = false;
 
