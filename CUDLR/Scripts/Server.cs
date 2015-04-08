@@ -41,6 +41,9 @@ namespace CUDLR {
     [SerializeField]
     public int Port = 55055;
 
+    [SerializeField]
+    public bool RegisterLogCallback = false;
+
     private static Thread mainThread;
     private static string fileRoot;
     private static HttpListener listener = new HttpListener();
@@ -182,12 +185,16 @@ namespace CUDLR {
     }
 
     void OnEnable() {
+      if (RegisterLogCallback) {
       // Capture Console Logs
       Application.RegisterLogCallback(Console.LogCallback);
     }
+    }
 
     void OnDisable() {
+      if (RegisterLogCallback) {
       Application.RegisterLogCallback(null);
+    }
     }
 
     void Update() {
