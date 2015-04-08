@@ -66,9 +66,6 @@ namespace CUDLR {
       mainThread = Thread.CurrentThread;
       fileRoot = Path.Combine(Application.streamingAssetsPath, "CUDLR");
 
-      RegisterRoutes();
-      RegisterFileHandlers();
-
       // Start server
       Debug.Log("Starting CUDLR Server on port : " + Port);
       listener.Prefixes.Add("http://*:"+Port+"/");
@@ -78,10 +75,11 @@ namespace CUDLR {
       StartCoroutine(HandleRequests());
     }
 
+
+
     private void RegisterRoutes() {
-
-      registeredRoutes = new List<RouteAttribute>();
-
+      if ( registeredRoutes == null ) {
+        registeredRoutes = new List<RouteAttribute>();
 
       foreach(Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
         foreach(Type type in assembly.GetTypes()) {
@@ -109,6 +107,8 @@ namespace CUDLR {
             }
           }
         }
+      }
+        RegisterFileHandlers();
       }
     }
 
@@ -203,6 +203,8 @@ namespace CUDLR {
     }
 
     void HandleRequest(RequestContext context) {
+      RegisterRoutes();
+
       try {
         bool handled = false;
 
