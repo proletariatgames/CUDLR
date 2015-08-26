@@ -46,7 +46,7 @@ namespace CUDLR {
 
     private static Thread mainThread;
     private static string fileRoot;
-    private static HttpListener listener = new HttpListener();
+    private static HttpListener listener;
     private static List<RouteAttribute> registeredRoutes;
     private static Queue<RequestContext> mainRequests = new Queue<RequestContext>();
 
@@ -71,6 +71,7 @@ namespace CUDLR {
 
       // Start server
       Debug.Log("Starting CUDLR Server on port : " + Port);
+      listener = new HttpListener();
       listener.Prefixes.Add("http://*:"+Port+"/");
       listener.Start();
       listener.BeginGetContext(ListenerCallback, null);
@@ -90,6 +91,7 @@ namespace CUDLR {
 
     public virtual void OnDestroy() {
       listener.Close();
+      listener = null;
     }
 
     private void RegisterRoutes() {
