@@ -195,7 +195,7 @@ namespace CUDLR {
 
     [Route("^/console/run$")]
     public static void Run(RequestContext context) {
-      string command = context.Request.QueryString.Get("command");
+      string command = Uri.UnescapeDataString(context.Request.QueryString.Get("command"));
       if (!string.IsNullOrEmpty(command))
         Console.Run(command);
 
