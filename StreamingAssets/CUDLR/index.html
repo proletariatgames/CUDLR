@@ -19,7 +19,7 @@
 
       function runCommand(command) {
         scrollBottom();
-        $.get("console/run?command="+command, function (data, status) {
+        $.get("console/run?command="+encodeURI(encodeURIComponent(command)), function (data, status) {
           updateConsole(function () {
             updateCommand(commandIndex - 1);
           });
