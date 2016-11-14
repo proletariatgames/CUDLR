@@ -201,13 +201,21 @@ namespace CUDLR {
     void OnEnable() {
       if (RegisterLogCallback) {
         // Capture Console Logs
+#if UNITY_5_3_OR_NEWER
+        Application.logMessageReceived += Console.LogCallback;
+#else
         Application.RegisterLogCallback(Console.LogCallback);
+#endif
       }
     }
 
     void OnDisable() {
       if (RegisterLogCallback) {
+#if UNITY_5_3_OR_NEWER
+        Application.logMessageReceived -= Console.LogCallback;
+#else
         Application.RegisterLogCallback(null);
+#endif
       }
     }
 
