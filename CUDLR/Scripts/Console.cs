@@ -86,7 +86,7 @@ namespace CUDLR {
         help += string.Format("\n{0} : {1}", cmd.m_command, cmd.m_help);
       }
 
-      Log(help);
+      Log("<span class='Help'>" + help + "</span>");
     }
 
     /* Find command based on partial string */
@@ -108,9 +108,11 @@ namespace CUDLR {
 
     /* Callback for Unity logging */
     public static void LogCallback (string logString, string stackTrace, LogType type) {
-      Console.Log(logString);
       if (type != LogType.Log) {
-        Console.Log(stackTrace);
+        Console.Log("<span class='" + type + "'>" + logString);
+        Console.Log(stackTrace + "</span>");
+      } else {
+        Console.Log(logString);
       }
     }
 
