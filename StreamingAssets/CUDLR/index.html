@@ -32,7 +32,8 @@
           // Check if we are scrolled to the bottom to force scrolling on update
           var output = $('#output');
           shouldScroll = (output[0].scrollHeight - output.scrollTop()) == output.innerHeight();
-          output.val(String(data));
+          output.html(String(data).replace(/\n|\r/g, '<br>') + "<br><br><br>");
+          //console.log(String(data));
           if (callback) callback();
           if (shouldScroll) scrollBottom();
         });
@@ -80,7 +81,7 @@
   </head>
 
   <body class="console">
-    <textarea id="output" class="console" readOnly></textarea>
+    <div id="output" class="console">asdfasdf</div>
     <textarea id="input" class="console" autofocus rows="1"></textarea>
 
     <script>

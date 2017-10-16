@@ -1,16 +1,54 @@
-textarea {resize:none;}
+html, body {
+	height:99%;
+}
+
+textarea {
+	resize:none;
+}
 
 body.console {
   background-color:black;
 }
+
+div.console {
+  height:100%;
+  width:100%;
+  background-color:#383838;
+  color:#F0F0F0;
+  font-size:14px;
+  font-family:monospace;
+  overflow-y:auto;
+  overflow-x:auto;
+  white-space:normal;
+  word-wrap:break-word;
+}
+
 textarea.console {
   width:100%;
   background-color:#383838;
   color:#F0F0F0;
   font-size:14px;
-  font-family:;"Courier New", Courier, monospace;
-
+  font-family:monospace;
+  position:fixed;
+  bottom:0%;
 }
-#output {
-  height:500px;
+
+span.Warning {
+	color:#f4e542;
+}
+
+span.Assert {
+	color:#f4e542;
+}
+
+span.Error {
+	color:#ff0000;
+}
+
+span.Exception {
+	color:#ff0000;
+}
+
+span.Help {
+	color:#16f3ff;
 }
