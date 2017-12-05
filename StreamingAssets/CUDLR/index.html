@@ -12,6 +12,7 @@
     <script>
       var commandIndex = -1;
       var hash = null;
+      var isUpdatePaused = false;
 
       function scrollBottom() {
         $('#output').scrollTop($('#output')[0].scrollHeight);
@@ -28,11 +29,13 @@
       }
 
       function updateConsole(callback) {
+        if (isUpdatePaused) return;
         $.get("console/out", function (data, status) {
           // Check if we are scrolled to the bottom to force scrolling on update
           var output = $('#output');
-          shouldScroll = (output[0].scrollHeight - output.scrollTop()) == output.innerHeight();
+          shouldScroll = Math.abs((output[0].scrollHeight - output.scrollTop()) - output.innerHeight()) < 5;
           output.html(String(data).replace(/\n|\r/g, '<br>') + "<br><br><br>");
+          //console.log(shouldScroll + " := " + output[0].scrollHeight + " - " + output.scrollTop() + " (" + Math.abs((output[0].scrollHeight - output.scrollTop()) - output.innerHeight()) + ") == " + output.innerHeight());
           //console.log(String(data));
           if (callback) callback();
           if (shouldScroll) scrollBottom();
@@ -81,10 +84,18 @@
   </head>
 
   <body class="console">
-    <div id="output" class="console">asdfasdf</div>
+    <button id="pauseUpdates">Pause Updates</button>
+    <div id="output" class="console"></div>
     <textarea id="input" class="console" autofocus rows="1"></textarea>
 
     <script>
+      // setup our pause updates button
+      $("#pauseUpdates").click(function() {
+        //console.log("pause updates " + isUpdatePaused);
+        isUpdatePaused = !isUpdatePaused;
+        $("#pauseUpdates").html(isUpdatePaused ? "Resume Updates" : "Pause Updates");
+      });
+
       $("#input").keydown( function (e) {
         if (e.keyCode == 13) { // Enter
           // we don't want a line break in the console
