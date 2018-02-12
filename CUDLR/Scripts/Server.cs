@@ -25,6 +25,7 @@ namespace CUDLR {
 
     public RequestContext(HttpListenerContext ctx)
     {
+#if !UNITY_WEBGL || UNITY_EDITOR
       context = ctx;
       match = null;
       pass = false;
@@ -32,6 +33,7 @@ namespace CUDLR {
       if (path == "/")
         path = "/index.html";
       currentRoute = 0;
+#endif
     }
   }
 
@@ -66,8 +68,13 @@ namespace CUDLR {
     };
 
     public virtual void Awake() {
+#if UNITY_WEBGL && !UNITY_EDITOR
+      WebGL_Relay.Initialize();
+#endif
       mainThread = Thread.CurrentThread;
       fileRoot = Path.Combine(Application.streamingAssetsPath, "CUDLR");
+
+#if !UNITY_WEBGL || UNITY_EDITOR
 
       // Start server
       Debug.Log("Starting CUDLR Server on port : " + Port);
@@ -77,6 +84,7 @@ namespace CUDLR {
       listener.BeginGetContext(ListenerCallback, null);
 
       StartCoroutine(HandleRequests());
+#endif
     }
 
     public void OnApplicationPause(bool paused) {
@@ -198,6 +206,7 @@ namespace CUDLR {
       registeredRoutes.Add(fileRoute);
     }
 
+#if !UNITY_WEBGL || UNITY_EDITOR
     void OnEnable() {
       if (RegisterLogCallback) {
         // Capture Console Logs
@@ -218,6 +227,7 @@ namespace CUDLR {
 #endif
       }
     }
+#endif
 
     void Update() {
       Console.Update();
