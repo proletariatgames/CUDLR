@@ -9,12 +9,12 @@ using UnityEngine;
 namespace CUDLR
 {
     /// <summary>
-    /// WebGLとCUDLR.Consoleを中継する
+    /// Relay between browser console and CUDLR.Console.
     /// </summary>
     public static class WebGL_Relay
     {
         /// <summary>
-        /// 初期化。ブラウザ側 javascript にコールバック設定
+        /// Initialize by setting callback to a javascript on the browser.
         /// </summary>
         public static void Initialize()
         {
@@ -34,7 +34,7 @@ namespace CUDLR
 
 #if UNITY_WEBGL && !UNITY_EDITOR
         /// <summary>
-        /// 汎用コマンド実行コールバック
+        /// General command callback.
         /// </summary>
         /// <param name="commandline"></param>
         [MonoPInvokeCallback(typeof(Func<string,string>))]
