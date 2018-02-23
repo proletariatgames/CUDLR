@@ -17,7 +17,7 @@ var CUDLR_Relay = {
     }
 
     document.onclick = function(){
-      if(!window.event.getModifierState("Control")
+      if(!window.event.getModifierState("Shift")
       || !window.event.getModifierState("Alt")) return true;
     
       var text = cc(prompt());
