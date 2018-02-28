@@ -1,11 +1,11 @@
 using UnityEngine;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Linq;
 using System.Reflection;
 using System.Net;
+using System.Collections;
 
 namespace CUDLR {
 
@@ -64,12 +64,23 @@ namespace CUDLR {
 
     /* Execute a command */
     public static void Run(string str) {
+#if UNITY_WEBGL && !UNITY_EDITOR
+      Instance.m_output.Clear();
+#endif
       if (str.Length > 0) {
         LogCommand(str);
         Instance.RecordCommand(str);
         Instance.m_commands.Run(str);
       }
     }
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+    public static string GetResult()
+    {
+        Update();
+        return string.Join("\n", Instance.m_output.ToArray());
+    }
+#endif
 
     /* Clear all output from console */
     [Command("clear", "clears console output", false)]
@@ -101,18 +112,35 @@ namespace CUDLR {
 
     /* Logs string to output */
     public static void Log(string str) {
+#if UNITY_WEBGL && !UNITY_EDITOR
+      Instance.m_output.Add(str);
+#else
+      LogCore(str);
+#endif
+    }
+
+    private static void LogCore(string str)
+    {
+#if !UNITY_WEBGL || UNITY_EDITOR
       Instance.m_output.Add(str);
       if (Instance.m_output.Count > MAX_LINES)
         Instance.m_output.RemoveAt(0);
+#endif
     }
 
     /* Callback for Unity logging */
     public static void LogCallback (string logString, string stackTrace, LogType type) {
-      if (type != LogType.Log) {
-        Console.Log("<span class='" + type + "'>" + logString);
-        Console.Log(stackTrace + "</span>");
-      } else {
-        Console.Log(logString);
+     if (type != LogType.Log) {
+#if UNITY_WEBGL && !UNITY_EDITOR
+        Console.LogCore(logString);
+        Console.LogCore(stackTrace);
+#else
+        Console.LogCore("<span class='" + type + "'>" + logString);
+        Console.LogCore(stackTrace + "</span>");
+#endif
+      }
+      else {
+        Console.LogCore(logString);
       }
     }
 
@@ -174,7 +202,7 @@ namespace CUDLR {
             }
           }
         }
-      }
+      }      
     }
 
     /* Get a previously ran command from the history */
@@ -333,7 +361,7 @@ namespace CUDLR {
     }
 
     static string[] emptyArgs = new string[0]{};
-    private void _run(string[] commands, int index) {
+    private void _run(string[] commands, int index) {      
       if (commands.Length == index) {
         RunCommand(emptyArgs);
         return;
