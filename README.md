@@ -1,5 +1,10 @@
-CUDLR
-=====
+# Deprecated
+
+This project is no longer maintained. If you are interested in taking over the project, email [hi-eng@proletariat.com](mailto:hi-eng@proletariat.com).
+
+---
+
+# CUDLR
 
 CUDLR (**C**onsole for **U**nity **D**ebugging and **L**ogging **R**emotely) is a remote developer console for Unity. Instead of struggling to enter console commands on a mobile devices or having to constantly export debugging logs from a device, CUDLR lets you use your development machine to enter debug commands and see their output or any log messages or stack traces. 
 
